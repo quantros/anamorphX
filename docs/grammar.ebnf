@@ -1,0 +1,275 @@
+(* 
+   Формальная EBNF-грамматика языка Anamorph v1.0
+   Автор: AnamorphX Development Team
+   Дата: 2024
+   
+   ВАЖНЫЕ ПРИНЦИПЫ:
+   - Ключевые слова: case-insensitive (neuro = NEURO = Neuro)
+   - Идентификаторы: case-sensitive (myNode ≠ MyNode)
+   - Пробелы и комментарии обрабатываются на уровне лексера
+*)
+
+(* ==================== ОСНОВНЫЕ КОНСТРУКЦИИ ==================== *)
+
+program = { statement } ;
+
+statement = node_declaration
+          | synapse_declaration  
+          | command_statement
+          | control_flow
+          | loop_statement
+          | function_declaration
+          | function_call
+          | comment
+          | newline ;
+
+(* ==================== ОБЪЯВЛЕНИЯ УЗЛОВ И СИНАПСОВ ==================== *)
+
+node_declaration = keyword_neuro , identifier , newline ;
+
+synapse_declaration = keyword_synap , identifier , "->" , identifier , newline ;
+
+(* ==================== КОМАНДЫ ==================== *)
+
+command_statement = command_keyword , [ argument_list ] , newline ;
+
+(* Ключевые слова команд (case-insensitive) *)
+command_keyword = keyword_pulse | keyword_pulseX | keyword_pulseIf | keyword_resonate 
+                | keyword_drift | keyword_bind | keyword_echo | keyword_forge 
+                | keyword_prune | keyword_filter | keyword_guard | keyword_mask
+                | keyword_scramble | keyword_trace | keyword_quanta | keyword_phase
+                | keyword_sync | keyword_async | keyword_fold | keyword_unfold
+                | keyword_reflect | keyword_absorb | keyword_diffuse | keyword_cluster
+                | keyword_expand | keyword_contract | keyword_encode | keyword_decode
+                | keyword_merge | keyword_split | keyword_halt | keyword_yield
+                | keyword_spawn | keyword_tag | keyword_query | keyword_response
+                | keyword_encrypt | keyword_decrypt | keyword_checkpoint
+                | keyword_rollback | keyword_wait | keyword_time | keyword_jump
+                | keyword_stack | keyword_pop | keyword_push | keyword_flag
+                | keyword_clearFlag | keyword_toggle | keyword_listen
+                | keyword_broadcast | keyword_filterIn | keyword_filterOut
+                | keyword_auth | keyword_audit | keyword_throttle | keyword_ban
+                | keyword_whitelist | keyword_blacklist | keyword_morph
+                | keyword_evolve | keyword_sense | keyword_act | keyword_log
+                | keyword_alert | keyword_reset | keyword_pattern | keyword_train
+                | keyword_infer | keyword_scaleUp | keyword_scaleDown
+                | keyword_backup | keyword_restore | keyword_snapshot
+                | keyword_migrate | keyword_notify | keyword_validate ;
+
+argument_list = "[" , argument , { "," , argument } , "]" ;
+
+argument = identifier , ":" , value ;
+
+value = string_literal
+      | number_literal  
+      | boolean_literal
+      | identifier
+      | array_literal
+      | object_literal ;
+
+(* ==================== РАСШИРЕННАЯ СИСТЕМА ТИПОВ ==================== *)
+
+type_system = basic_type | complex_type | user_defined_type ;
+
+basic_type = "string" | "number" | "boolean" | "array" | "object" ;
+
+complex_type = generic_type | union_type | function_type ;
+
+generic_type = identifier , "<" , type_list , ">" ;
+type_list = type_system , { "," , type_system } ;
+
+union_type = type_system , "|" , type_system , { "|" , type_system } ;
+
+function_type = "(" , [ type_list ] , ")" , "=>" , type_system ;
+
+user_defined_type = "neuro" | "synap" | "signal" | identifier ;
+
+(* ==================== МОДЕЛЬ СИГНАЛОВ ==================== *)
+
+signal_definition = "signal" , identifier , "{" , signal_properties , "}" ;
+
+signal_properties = signal_property , { "," , signal_property } ;
+
+signal_property = signal_data | signal_metadata | signal_routing ;
+
+signal_data = "data" , ":" , value ;
+signal_metadata = "metadata" , ":" , object_literal ;
+signal_routing = "routing" , ":" , routing_rules ;
+
+routing_rules = "[" , routing_rule , { "," , routing_rule } , "]" ;
+routing_rule = "from" , ":" , identifier , "to" , ":" , identifier , [ "condition" , ":" , expression ] ;
+
+(* ==================== ОБРАБОТКА ОШИБОК ==================== *)
+
+error_handling = try_statement | error_recovery_statement ;
+
+try_statement = keyword_try , newline ,
+                { statement } ,
+                catch_blocks ,
+                [ finally_block ] ,
+                keyword_end , newline ;
+
+catch_blocks = catch_block , { catch_block } ;
+
+catch_block = keyword_catch , [ error_type ] , [ error_variable ] , newline ,
+              { statement } ;
+
+error_type = identifier ;
+error_variable = identifier ;
+
+finally_block = keyword_finally , newline ,
+                { statement } ;
+
+error_recovery_statement = keyword_recover , error_strategy , newline ;
+error_strategy = "skip" | "retry" | "fallback" | "abort" ;
+
+(* ==================== ЛИТЕРАЛЫ ==================== *)
+
+string_literal = '"' , { string_character } , '"' ;
+string_character = ? любой символ кроме " и \ ? | escape_sequence ;
+escape_sequence = "\" , ( '"' | "\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode_escape ) ;
+unicode_escape = "u" , hex_digit , hex_digit , hex_digit , hex_digit ;
+
+number_literal = [ "-" ] , integer_part , [ "." , fractional_part ] , [ exponent_part ] ;
+integer_part = "0" | ( non_zero_digit , { digit } ) ;
+fractional_part = digit , { digit } ;
+exponent_part = ( "e" | "E" ) , [ "+" | "-" ] , digit , { digit } ;
+
+boolean_literal = keyword_true | keyword_false ;
+
+array_literal = "[" , [ value , { "," , value } ] , "]" ;
+
+object_literal = "{" , [ property , { "," , property } ] , "}" ;
+property = ( identifier | string_literal ) , ":" , value ;
+
+(* ==================== УПРАВЛЯЮЩИЕ КОНСТРУКЦИИ ==================== *)
+
+control_flow = if_statement | switch_statement | match_statement ;
+
+if_statement = keyword_if , condition , keyword_then , newline ,
+               { statement } ,
+               { elif_clause } ,
+               [ else_clause ] ,
+               keyword_end , newline ;
+
+elif_clause = keyword_elif , condition , keyword_then , newline ,
+              { statement } ;
+
+else_clause = keyword_else , newline ,
+              { statement } ;
+
+switch_statement = keyword_switch , expression , newline ,
+                   { case_clause } ,
+                   [ default_clause ] ,
+                   keyword_end , newline ;
+
+case_clause = keyword_case , value_pattern , ":" , newline , { statement } ;
+default_clause = keyword_default , ":" , newline , { statement } ;
+
+(* Паттерн-матчинг для расширенных возможностей *)
+match_statement = keyword_match , expression , newline ,
+                  { match_clause } ,
+                  keyword_end , newline ;
+
+match_clause = keyword_when , pattern , [ guard_condition ] , ":" , newline , { statement } ;
+pattern = literal_pattern | variable_pattern | constructor_pattern | wildcard_pattern ;
+guard_condition = keyword_if , expression ;
+
+(* ==================== КЛЮЧЕВЫЕ СЛОВА (CASE-INSENSITIVE) ==================== *)
+
+(* Основные ключевые слова *)
+keyword_neuro = ( "neuro" | "NEURO" | "Neuro" ) ;
+keyword_synap = ( "synap" | "SYNAP" | "Synap" ) ;
+keyword_pulse = ( "pulse" | "PULSE" | "Pulse" ) ;
+keyword_if = ( "if" | "IF" | "If" ) ;
+keyword_then = ( "then" | "THEN" | "Then" ) ;
+keyword_else = ( "else" | "ELSE" | "Else" ) ;
+keyword_elif = ( "elif" | "ELIF" | "Elif" ) ;
+keyword_end = ( "end" | "END" | "End" ) ;
+keyword_true = ( "true" | "TRUE" | "True" ) ;
+keyword_false = ( "false" | "FALSE" | "False" ) ;
+
+(* Управляющие ключевые слова *)
+keyword_try = ( "try" | "TRY" | "Try" ) ;
+keyword_catch = ( "catch" | "CATCH" | "Catch" ) ;
+keyword_finally = ( "finally" | "FINALLY" | "Finally" ) ;
+keyword_recover = ( "recover" | "RECOVER" | "Recover" ) ;
+
+(* Команды безопасности *)
+keyword_filter = ( "filter" | "FILTER" | "Filter" ) ;
+keyword_guard = ( "guard" | "GUARD" | "Guard" ) ;
+keyword_auth = ( "auth" | "AUTH" | "Auth" ) ;
+keyword_encrypt = ( "encrypt" | "ENCRYPT" | "Encrypt" ) ;
+keyword_decrypt = ( "decrypt" | "DECRYPT" | "Decrypt" ) ;
+
+(* Все остальные ключевые слова следуют аналогичному паттерну *)
+keyword_pulseX = ( "pulseX" | "PULSEX" | "PulseX" ) ;
+keyword_pulseIf = ( "pulseIf" | "PULSEIF" | "PulseIf" ) ;
+(* ... остальные команды по аналогии ... *)
+
+(* ==================== ЛЕКСИЧЕСКИЕ ЭЛЕМЕНТЫ ==================== *)
+
+identifier = letter , { letter | digit | "_" } ;
+letter = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" 
+       | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+       | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M"
+       | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+non_zero_digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+hex_digit = digit | "a" | "b" | "c" | "d" | "e" | "f" | "A" | "B" | "C" | "D" | "E" | "F" ;
+
+(* ==================== КОММЕНТАРИИ И ПРОБЕЛЫ (ОБРАБАТЫВАЮТСЯ ЛЕКСЕРОМ) ==================== *)
+
+comment = single_line_comment | multi_line_comment ;
+
+single_line_comment = "#" , { ? любой символ кроме newline ? } , newline ;
+
+multi_line_comment = "/*" , { multi_line_comment_char } , "*/" ;
+multi_line_comment_char = ? любой символ кроме */ ? ;
+
+newline = "\n" | "\r\n" | "\r" ;
+
+whitespace = " " | "\t" | "\f" | "\v" ;
+
+(* ВАЖНО: Пробелы и комментарии обрабатываются и удаляются на этапе лексического анализа,
+   поэтому в синтаксических правилах они не учитываются явно *)
+
+(* ==================== ПРИМЕЧАНИЯ ПО РЕАЛИЗАЦИИ ==================== *)
+
+(* 
+СТРАТЕГИИ ОБРАБОТКИ ОШИБОК:
+1. Panic mode recovery - при ошибке пропускать токены до синхронизирующего символа
+2. Phrase level recovery - локальные исправления ошибок
+3. Error productions - специальные правила для частых ошибок
+4. Global correction - минимальные изменения для восстановления
+
+ПРИОРИТЕТ ОПЕРАТОРОВ (от высшего к низшему):
+1. () [] . -> (доступ к членам)
+2. ! not - + (унарные операторы)
+3. * / % (мультипликативные)
+4. + - (аддитивные) 
+5. < <= > >= (сравнение)
+6. == != (равенство)
+7. and (логическое И)
+8. or (логическое ИЛИ)
+9. = := (присваивание)
+
+ОБРАБОТКА СИГНАЛОВ:
+- Сигналы имеют приоритет и могут прерывать выполнение
+- Поддержка асинхронной обработки сигналов
+- Возможность маршрутизации по условиям
+- Буферизация сигналов при перегрузке
+*)
+
+(* ==================== ЗАВЕРШЕНИЕ ГРАММАТИКИ ==================== *)
+
+(* Примечания:
+   1. Все ключевые слова чувствительны к регистру
+   2. Пробелы и табуляции игнорируются, кроме как для разделения токенов
+   3. Комментарии начинаются с # и продолжаются до конца строки
+   4. Строки поддерживают escape-последовательности
+   5. Числа могут быть целыми или с плавающей точкой
+   6. Идентификаторы не могут начинаться с цифры
+   7. Все блоки должны быть явно закрыты ключевым словом "end"
+*) 

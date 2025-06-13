@@ -1,0 +1,50 @@
+# Базовый пример программы на языке Anamorph
+# Демонстрация основных возможностей языка
+
+# Объявление нейронов (узлов)
+neuro input_sensor
+neuro data_processor  
+neuro security_filter
+neuro output_node
+
+# Создание синапсов (связей)
+synap input_sensor -> security_filter
+synap security_filter -> data_processor
+synap data_processor -> output_node
+
+# Конфигурация безопасности
+guard [mode: "strict", sensitivity: 8]
+filterIn [rules: ["block_malicious", "validate_input"]]
+
+# Основная логика обработки
+func process_request(data: string): boolean
+    # Валидация входных данных
+    validate [data: data, schema: "http_request"]
+    
+    # Отправка сигнала на обработку
+    pulse [from: input_sensor, to: security_filter, data: data]
+    
+    # Ожидание ответа от фильтра безопасности
+    wait [for: "security_check", timeout: 5]
+    
+    # Условная обработка
+    if security_status == "approved" then
+        pulse [from: security_filter, to: data_processor, data: data]
+        log [message: "Request approved", level: "info"]
+        response [to: client, data: processed_result]
+        return true
+    else
+        ban [target: client_ip, duration: 300]
+        alert [level: "warning", message: "Suspicious request blocked"]
+        return false
+    end
+end
+
+# Обработчик входящих запросов
+on "http_request" from input_sensor
+    process_request(request_data)
+end
+
+# Мониторинг системы
+trace [event: "system_start", level: "info"]
+checkpoint [name: "initial_state"] 

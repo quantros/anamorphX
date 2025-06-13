@@ -1,0 +1,124 @@
+# AnamorphX Language Dependencies
+# Базовые зависимости для разработки языка программирования
+
+# Core language processing
+ply==3.11                    # Lexer and parser generation
+lark==1.1.7                  # Alternative parser framework
+antlr4-python3-runtime==4.13.1  # ANTLR runtime for advanced parsing
+
+# Asynchronous processing
+asyncio==3.4.3               # Async/await support
+aiofiles==23.2.1             # Async file operations
+aiohttp==3.9.1               # Async HTTP client/server
+
+# Web framework and API
+fastapi==0.104.1             # Modern web framework
+uvicorn==0.24.0              # ASGI server
+pydantic==2.5.0              # Data validation
+python-multipart==0.0.6     # Form data parsing
+python-jose[cryptography]==3.3.0  # JWT handling
+
+# Security and sandboxing
+docker==6.1.3                # Docker API client
+cryptography==41.0.8         # Cryptographic operations
+bcrypt==4.1.2                # Password hashing
+python-security==1.7.1      # Security utilities
+
+# Monitoring and metrics
+prometheus-client==0.19.0    # Prometheus metrics
+structlog==23.2.0            # Structured logging
+python-json-logger==2.0.7   # JSON logging formatter
+psutil==5.9.6                # System monitoring
+
+# Database and caching
+redis==5.0.1                 # Redis client
+sqlalchemy==2.0.23          # SQL toolkit
+alembic==1.13.1             # Database migrations
+
+# Testing framework
+pytest==7.4.3               # Testing framework
+pytest-asyncio==0.21.1      # Async testing support
+pytest-cov==4.1.0           # Coverage reporting
+hypothesis==6.92.1          # Property-based testing
+pytest-mock==3.12.0         # Mocking utilities
+pytest-benchmark==4.0.0     # Performance benchmarking
+
+# Development tools
+black==23.11.0               # Code formatting
+flake8==6.1.0                # Linting
+mypy==1.7.1                  # Type checking
+pre-commit==3.6.0           # Git hooks
+bandit==1.7.5                # Security linting
+
+# Documentation
+sphinx==7.2.6               # Documentation generator
+sphinx-rtd-theme==1.3.0     # ReadTheDocs theme
+mkdocs==1.5.3               # Alternative documentation
+mkdocs-material==9.4.8      # Material theme for MkDocs
+
+# Utilities
+click==8.1.7                 # CLI framework
+rich==13.7.0                 # Rich text and beautiful formatting
+typer==0.9.0                 # Modern CLI framework
+pyyaml==6.0.1               # YAML parsing
+toml==0.10.2                # TOML parsing
+python-dotenv==1.0.0        # Environment variables
+
+# Performance and profiling
+cProfile==1.0.0             # Built-in profiler
+memory-profiler==0.61.0     # Memory usage profiling
+line-profiler==4.1.1        # Line-by-line profiling
+py-spy==0.3.14              # Sampling profiler
+
+# Networking and protocols
+websockets==12.0            # WebSocket support
+grpcio==1.59.3              # gRPC framework
+protobuf==4.25.1            # Protocol buffers
+
+# Data processing
+numpy==1.25.2               # Numerical computing
+pandas==2.1.4               # Data analysis
+matplotlib==3.8.2          # Plotting library
+
+# Plugin system
+pluggy==1.3.0               # Plugin framework
+importlib-metadata==6.8.0   # Import utilities
+setuptools==69.0.2          # Package tools
+
+# Containerization and deployment
+kubernetes==28.1.0          # Kubernetes client
+docker-compose==1.29.2      # Docker Compose
+
+# Additional security
+certifi==2023.11.17         # Certificate bundle
+urllib3==2.1.0              # HTTP library
+requests==2.31.0            # HTTP requests
+
+# Fuzzing and security testing
+atheris==2.3.0              # Fuzzing framework
+safety==2.3.5               # Security vulnerability scanner
+
+# Configuration management
+dynaconf==3.2.4             # Configuration management
+python-decouple==3.8        # Environment configuration
+
+# Caching and performance
+cachetools==5.3.2           # Caching utilities
+lru-dict==1.3.0             # LRU cache implementation
+
+# Serialization
+msgpack==1.0.7              # MessagePack serialization
+orjson==3.9.10              # Fast JSON library
+
+# Validation and schemas
+jsonschema==4.20.0          # JSON schema validation
+marshmallow==3.20.1         # Object serialization
+
+# Background tasks
+celery==5.3.4               # Distributed task queue
+kombu==5.3.4                # Messaging library
+
+# Development dependencies (optional)
+ipython==8.18.1             # Enhanced Python shell
+jupyter==1.0.0              # Jupyter notebooks
+notebook==7.0.6             # Jupyter notebook server 

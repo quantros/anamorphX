@@ -1,0 +1,854 @@
+openapi: 3.0.3
+info:
+  title: Anamorph Management API
+  description: |
+    REST API для управления системой Anamorph - языком программирования с нейронными метафорами.
+    
+    Основные возможности:
+    - Выполнение Anamorph кода
+    - Управление сигналами
+    - Мониторинг системы
+    - Управление плагинами
+    - Получение метрик и логов
+  version: 1.0.0
+  contact:
+    name: Anamorph Team
+    email: support@anamorph.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.anamorph.dev/v1
+    description: Production server
+  - url: https://staging-api.anamorph.dev/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /execute:
+    post:
+      summary: Выполнение Anamorph кода
+      description: Выполняет переданный Anamorph код в безопасной песочнице
+      operationId: executeCode
+      tags:
+        - Code Execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteCodeRequest'
+            examples:
+              simple_example:
+                summary: Простой пример
+                value:
+                  code: |
+                    neuro main {
+                      pulse "Hello, Anamorph!" -> output;
+                    }
+                  timeout: 30
+              complex_example:
+                summary: Сложный пример с контекстом
+                value:
+                  code: |
+                    neuro webServer {
+                      synap port = 8080;
+                      resonate httpListener(port) -> requests;
+                      pulse requests -> processRequest;
+                    }
+                  context:
+                    environment: "production"
+                    debug: false
+                  timeout: 60
+      responses:
+        '200':
+          description: Код успешно выполнен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResult'
+        '400':
+          description: Ошибка в коде или параметрах
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /signals/send:
+    post:
+      summary: Отправка сигнала
+      description: Отправляет сигнал в систему обработки сигналов Anamorph
+      operationId: sendSignal
+      tags:
+        - Signal Processing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignalRequest'
+            examples:
+              sync_signal:
+                summary: Синхронный сигнал
+                value:
+                  type: "sync"
+                  payload:
+                    action: "process_data"
+                    data: [1, 2, 3, 4, 5]
+                  priority: 5
+              async_signal:
+                summary: Асинхронный сигнал
+                value:
+                  type: "async"
+                  payload:
+                    notification: "User registered"
+                    user_id: "12345"
+                  priority: 3
+                  target: "notification_service"
+      responses:
+        '200':
+          description: Сигнал успешно отправлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /signals/{signalId}/status:
+    get:
+      summary: Статус обработки сигнала
+      description: Получает текущий статус обработки сигнала по его ID
+      operationId: getSignalStatus
+      tags:
+        - Signal Processing
+      parameters:
+        - name: signalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Уникальный идентификатор сигнала
+      responses:
+        '200':
+          description: Статус сигнала получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalStatus'
+        '404':
+          description: Сигнал не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      summary: Проверка состояния системы
+      description: Возвращает информацию о состоянии всех компонентов системы
+      operationId: healthCheck
+      tags:
+        - Monitoring
+      security: []  # Публичный endpoint
+      responses:
+        '200':
+          description: Система работает нормально
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthReport'
+        '503':
+          description: Система недоступна или деградирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthReport'
+
+  /metrics:
+    get:
+      summary: Получение метрик системы
+      description: Возвращает метрики производительности и использования системы
+      operationId: getMetrics
+      tags:
+        - Monitoring
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, prometheus]
+            default: json
+          description: Формат возвращаемых метрик
+        - name: component
+          in: query
+          schema:
+            type: string
+            enum: [lexer, parser, interpreter, signals, security]
+          description: Фильтр по компоненту системы
+      responses:
+        '200':
+          description: Метрики получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+            text/plain:
+              schema:
+                type: string
+                description: Метрики в формате Prometheus
+
+  /plugins:
+    get:
+      summary: Список установленных плагинов
+      description: Возвращает список всех установленных плагинов
+      operationId: listPlugins
+      tags:
+        - Plugin Management
+      responses:
+        '200':
+          description: Список плагинов получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginList'
+
+    post:
+      summary: Установка плагина
+      description: Устанавливает новый плагин из указанного источника
+      operationId: installPlugin
+      tags:
+        - Plugin Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PluginInstallRequest'
+      responses:
+        '200':
+          description: Плагин успешно установлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginInstallResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Плагин уже установлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /plugins/{pluginName}:
+    delete:
+      summary: Удаление плагина
+      description: Удаляет установленный плагин
+      operationId: uninstallPlugin
+      tags:
+        - Plugin Management
+      parameters:
+        - name: pluginName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Имя плагина для удаления
+      responses:
+        '200':
+          description: Плагин успешно удален
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Плагин не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /logs:
+    get:
+      summary: Получение логов системы
+      description: Возвращает логи системы с возможностью фильтрации
+      operationId: getLogs
+      tags:
+        - Monitoring
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [debug, info, warning, error, critical]
+          description: Уровень логирования
+        - name: component
+          in: query
+          schema:
+            type: string
+          description: Компонент системы
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Начальная дата (ISO 8601)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Конечная дата (ISO 8601)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Максимальное количество записей
+      responses:
+        '200':
+          description: Логи получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogsResponse'
+
+  /security/scan:
+    post:
+      summary: Сканирование кода на безопасность
+      description: Выполняет статический анализ безопасности для переданного кода
+      operationId: securityScan
+      tags:
+        - Security
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityScanRequest'
+      responses:
+        '200':
+          description: Анализ завершен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityReport'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен для аутентификации
+
+  schemas:
+    ExecuteCodeRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: Anamorph код для выполнения
+          example: |
+            neuro main {
+              pulse "Hello, World!" -> output;
+            }
+        context:
+          type: object
+          additionalProperties: true
+          description: Контекст выполнения (переменные окружения, настройки)
+        timeout:
+          type: integer
+          minimum: 1
+          maximum: 300
+          default: 30
+          description: Таймаут выполнения в секундах
+
+    ExecutionResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        result:
+          description: Результат выполнения кода
+        execution_time:
+          type: number
+          description: Время выполнения в секундах
+        memory_used:
+          type: integer
+          description: Использованная память в байтах
+        output:
+          type: array
+          items:
+            type: string
+          description: Вывод программы
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExecutionError'
+
+    ExecutionError:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Тип ошибки
+        message:
+          type: string
+          description: Сообщение об ошибке
+        line:
+          type: integer
+          description: Номер строки с ошибкой
+        column:
+          type: integer
+          description: Номер столбца с ошибкой
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+
+    SignalRequest:
+      type: object
+      required:
+        - type
+        - payload
+      properties:
+        type:
+          type: string
+          enum: [sync, async, priority, streaming]
+          description: Тип сигнала
+        payload:
+          type: object
+          additionalProperties: true
+          description: Данные сигнала
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+          description: Приоритет сигнала (1 - низкий, 10 - высокий)
+        target:
+          type: string
+          description: Целевой обработчик сигнала
+        timeout:
+          type: integer
+          minimum: 1
+          maximum: 300
+          description: Таймаут обработки в секундах
+
+    SignalResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed]
+        signal_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор сигнала
+        estimated_processing_time:
+          type: number
+          description: Ожидаемое время обработки в секундах
+
+    SignalStatus:
+      type: object
+      properties:
+        signal_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, completed, failed, timeout]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Прогресс обработки в процентах
+        result:
+          description: Результат обработки (если завершено)
+        error:
+          type: string
+          description: Описание ошибки (если неудачно)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    HealthReport:
+      type: object
+      properties:
+        overall_status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        components:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ComponentHealth'
+        uptime:
+          type: number
+          description: Время работы системы в секундах
+
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        message:
+          type: string
+          description: Дополнительная информация о состоянии
+        last_check:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          additionalProperties: true
+
+    MetricsResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        lexer:
+          $ref: '#/components/schemas/LexerMetrics'
+        parser:
+          $ref: '#/components/schemas/ParserMetrics'
+        interpreter:
+          $ref: '#/components/schemas/InterpreterMetrics'
+        signals:
+          $ref: '#/components/schemas/SignalMetrics'
+        security:
+          $ref: '#/components/schemas/SecurityMetrics'
+
+    LexerMetrics:
+      type: object
+      properties:
+        tokens_processed_total:
+          type: integer
+        errors_total:
+          type: integer
+        average_processing_time:
+          type: number
+        current_queue_size:
+          type: integer
+
+    ParserMetrics:
+      type: object
+      properties:
+        ast_nodes_created_total:
+          type: integer
+        parse_errors_total:
+          type: integer
+        average_parsing_time:
+          type: number
+        cache_hit_rate:
+          type: number
+
+    InterpreterMetrics:
+      type: object
+      properties:
+        executions_total:
+          type: integer
+        successful_executions:
+          type: integer
+        failed_executions:
+          type: integer
+        average_execution_time:
+          type: number
+        memory_usage:
+          type: integer
+
+    SignalMetrics:
+      type: object
+      properties:
+        signals_processed_total:
+          type: integer
+        signals_by_type:
+          type: object
+          additionalProperties:
+            type: integer
+        average_processing_time:
+          type: number
+        queue_size:
+          type: integer
+        throughput:
+          type: number
+          description: Сигналов в секунду
+
+    SecurityMetrics:
+      type: object
+      properties:
+        scans_performed:
+          type: integer
+        violations_found:
+          type: integer
+        violations_by_severity:
+          type: object
+          additionalProperties:
+            type: integer
+        sandbox_executions:
+          type: integer
+        blocked_operations:
+          type: integer
+
+    PluginList:
+      type: object
+      properties:
+        plugins:
+          type: array
+          items:
+            $ref: '#/components/schemas/PluginInfo'
+        total_count:
+          type: integer
+
+    PluginInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        author:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, error]
+        installed_at:
+          type: string
+          format: date-time
+        commands_provided:
+          type: array
+          items:
+            type: string
+        types_provided:
+          type: array
+          items:
+            type: string
+
+    PluginInstallRequest:
+      type: object
+      required:
+        - plugin_url
+      properties:
+        plugin_url:
+          type: string
+          format: uri
+          description: URL плагина для установки
+        config:
+          type: object
+          additionalProperties: true
+          description: Конфигурация плагина
+        force:
+          type: boolean
+          default: false
+          description: Принудительная установка (перезапись существующего)
+
+    PluginInstallResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        message:
+          type: string
+        plugin_info:
+          $ref: '#/components/schemas/PluginInfo'
+
+    SecurityScanRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: Код для анализа безопасности
+        rules:
+          type: array
+          items:
+            type: string
+          description: Специфические правила для проверки
+
+    SecurityReport:
+      type: object
+      properties:
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecurityViolation'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecurityWarning'
+        scan_duration:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+    SecurityViolation:
+      type: object
+      properties:
+        rule:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        message:
+          type: string
+        line:
+          type: integer
+        column:
+          type: integer
+        suggestion:
+          type: string
+
+    SecurityWarning:
+      type: object
+      properties:
+        rule:
+          type: string
+        message:
+          type: string
+        line:
+          type: integer
+        column:
+          type: integer
+
+    LogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+        total_count:
+          type: integer
+        has_more:
+          type: boolean
+
+    LogEntry:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [debug, info, warning, error, critical]
+        component:
+          type: string
+        message:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Код ошибки
+        message:
+          type: string
+          description: Описание ошибки
+        details:
+          type: object
+          additionalProperties: true
+          description: Дополнительные детали ошибки
+        timestamp:
+          type: string
+          format: date-time
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    Unauthorized:
+      description: Неавторизованный доступ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "unauthorized"
+            message: "Invalid or missing authentication token"
+            timestamp: "2024-01-15T10:30:00Z"
+
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    RateLimited:
+      description: Превышен лимит запросов
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "rate_limited"
+            message: "Too many requests. Please try again later."
+            timestamp: "2024-01-15T10:30:00Z"
+
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Code Execution
+    description: Выполнение Anamorph кода
+  - name: Signal Processing
+    description: Управление сигналами
+  - name: Monitoring
+    description: Мониторинг и метрики системы
+  - name: Plugin Management
+    description: Управление плагинами
+  - name: Security
+    description: Безопасность и анализ кода 
