@@ -195,3 +195,12 @@ prometheus_data/
 
 # Grafana data
 grafana_data/ 
+# Temporary demo and report files
+demo_*.py
+*_REPORT.md
+*_STATUS.md
+*_COMPLETION*.md
+*_PLAN.md
+*_PROGRESS*.md
+test_*.py
+progress_report.md

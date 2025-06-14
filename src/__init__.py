@@ -26,6 +26,12 @@ def get_version() -> str:
         version += f"-{VERSION_INFO['stage']}.{VERSION_INFO['build']}"
     return version
 
+# Core imports
+from .lexer import AnamorphLexer, Token, TokenType
+from .parser import AnamorphParser, ParseResult
+from .semantic import SemanticAnalyzer, AnalysisResult, AnalysisContext
+from .syntax import *
+
 # Package metadata
 __all__ = [
     '__version__',
@@ -33,5 +39,14 @@ __all__ = [
     '__email__',
     '__description__',
     'VERSION_INFO',
-    'get_version'
+    'get_version',
+    # Core components
+    'AnamorphLexer',
+    'Token',
+    'TokenType',
+    'AnamorphParser',
+    'ParseResult',
+    'SemanticAnalyzer',
+    'AnalysisResult',
+    'AnalysisContext'
 ] 

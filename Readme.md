@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Development Status](https://img.shields.io/badge/status-in%20development-orange.svg)](https://github.com/reincarnation/anamorphX)
+[![Development Status](https://img.shields.io/badge/status-in%20development-orange.svg)](https://github.com/quantros/anamorphX)
 [![Architecture](https://img.shields.io/badge/architecture-enterprise%20ready-green.svg)](docs/enhanced_architecture.md)
 
 > **Anamorph** - уникальный язык программирования с нейронными метафорами, предназначенный для создания безопасных корпоративных веб-серверов с встроенной защитой от XSS, SQL-инъекций и DDoS-атак.
@@ -66,7 +66,7 @@ neuro handleUsers(request) {
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/reincarnation/anamorphX.git
+git clone https://github.com/quantros/anamorphX.git
 cd anamorphX
 
 # Создание виртуального окружения
@@ -315,14 +315,14 @@ bandit -r src/
 
 ## 👥 Команда
 
-- **Архитектор проекта**: [reincarnation](https://github.com/reincarnation)
+- **Архитектор проекта**: [Degree](https://github.com/quantros)
 - **Дизайн языка**: Команда anamorphX
 - **Система безопасности**: Эксперты по безопасности
 
 ## 📞 Контакты
 
-- **GitHub Issues**: [Создать issue](https://github.com/reincarnation/anamorphX/issues)
-- **Документация**: [Wiki](https://github.com/reincarnation/anamorphX/wiki)
+- **GitHub Issues**: [Создать issue](https://github.com/quantros/anamorphX/issues)
+- **Документация**: [Wiki](https://github.com/quantros/anamorphX/wiki)
 - **Email**: support@anamorph.dev
 
 ---
@@ -331,9 +331,9 @@ bandit -r src/
 
 **🧠 Anamorph - Будущее безопасного программирования уже здесь! 🚀**
 
-[![GitHub stars](https://img.shields.io/github/stars/reincarnation/anamorphX?style=social)](https://github.com/reincarnation/anamorphX/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/reincarnation/anamorphX?style=social)](https://github.com/reincarnation/anamorphX/network)
-[![GitHub watchers](https://img.shields.io/github/watchers/reincarnation/anamorphX?style=social)](https://github.com/reincarnation/anamorphX/watchers)
+[![GitHub stars](https://img.shields.io/github/stars/quantros/anamorphX?style=social)](https://github.com/quantros/anamorphX/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/quantros/anamorphX?style=social)](https://github.com/quantros/anamorphX/network)
+[![GitHub watchers](https://img.shields.io/github/watchers/quantros/anamorphX?style=social)](https://github.com/quantros/anamorphX/watchers)
 
 </div>
 

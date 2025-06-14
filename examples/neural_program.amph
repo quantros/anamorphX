@@ -1,0 +1,50 @@
+// Пример программы на языке Anamorph
+// Демонстрирует основные возможности языка нейропрограммирования
+
+// Базовая нейрофункция для обработки данных
+neuro process_data(input: array): array {
+    // Фильтрация входных данных
+    filter input by (x > 0);
+    
+    // Нормализация
+    synap normalized: array = normalize(input);
+    
+    // Кодирование
+    encode normalized using neural_encoder;
+    
+    return normalized;
+}
+
+// Резонансная функция для анализа паттернов
+resonate analyze_patterns(data: matrix) {
+    // Кластеризация данных
+    cluster data into groups;
+    
+    // Поиск паттернов
+    pattern match data {
+        case spike_pattern: handle_spike();
+        case wave_pattern: handle_wave();
+        default: handle_unknown();
+    }
+    
+    // Отправка результатов
+    pulse analysis_results -> output_channel;
+}
+
+// Главная функция
+neuro main(): void {
+    // Инициализация данных
+    synap raw_data: array = load_data();
+    
+    // Обработка данных
+    synap processed: array = process_data(raw_data);
+    
+    // Анализ паттернов
+    analyze_patterns(processed);
+    
+    // Логирование результата
+    log "Processing completed successfully";
+}
+
+// Запуск программы
+main(); 
