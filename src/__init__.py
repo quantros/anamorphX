@@ -1,8 +1,52 @@
 """
-AnamorphX - Уникальный язык программирования с нейросетевой архитектурой
-Версия: 1.0.0 (в разработке)
+Anamorph Neural Programming Language Implementation.
+
+This package contains the complete implementation of the Anamorph language
+including lexer, parser, interpreter, signal processing system, and more.
 """
 
-__version__ = "1.0.0-dev"
-__author__ = "AnamorphX Development Team"
-__description__ = "Нейросетевой язык программирования для защищенных enterprise систем" 
+__version__ = "0.1.0"
+__author__ = "anamorphX Team"
+__email__ = "team@anamorph.dev"
+__description__ = "Neural Programming Language with unique signal processing"
+
+# Version information
+VERSION_INFO = {
+    'major': 0,
+    'minor': 1,
+    'patch': 0,
+    'stage': 'alpha',
+    'build': 1
+}
+
+def get_version() -> str:
+    """Get the current version string."""
+    version = f"{VERSION_INFO['major']}.{VERSION_INFO['minor']}.{VERSION_INFO['patch']}"
+    if VERSION_INFO['stage'] != 'release':
+        version += f"-{VERSION_INFO['stage']}.{VERSION_INFO['build']}"
+    return version
+
+# Core imports
+from .lexer import AnamorphLexer, Token, TokenType
+from .parser import AnamorphParser, ParseResult
+from .semantic import SemanticAnalyzer, AnalysisResult, AnalysisContext
+from .syntax import *
+
+# Package metadata
+__all__ = [
+    '__version__',
+    '__author__',
+    '__email__',
+    '__description__',
+    'VERSION_INFO',
+    'get_version',
+    # Core components
+    'AnamorphLexer',
+    'Token',
+    'TokenType',
+    'AnamorphParser',
+    'ParseResult',
+    'SemanticAnalyzer',
+    'AnalysisResult',
+    'AnalysisContext'
+] 
