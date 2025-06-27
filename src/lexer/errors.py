@@ -111,6 +111,22 @@ class LexerError(Exception):
             self.suggestions = []
         if self.related_errors is None:
             self.related_errors = []
+
+    # Compatibility accessors used by older tests
+    @property
+    def line(self) -> int:
+        """Line where the error occurred."""
+        return self.context.line
+
+    @property
+    def column(self) -> int:
+        """Column where the error occurred."""
+        return self.context.column
+
+    @property
+    def position(self) -> int:
+        """Absolute character position of the error."""
+        return self.context.position
     
     def __str__(self) -> str:
         location = ""
