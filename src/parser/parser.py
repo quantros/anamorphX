@@ -858,6 +858,102 @@ def create_parser(debug: bool = False) -> AnamorphParser:
     return AnamorphParser(debug=debug)
 
 
+def parse(source_code: str, filename: str = "<source>", debug: bool = False) -> ParseResult:
+    """
+    Parse source code and return ParseResult.
+    
+    Args:
+        source_code: The Anamorph source code to parse
+        filename: Optional filename for error reporting
+        debug: Enable debug output
+        
+    Returns:
+        ParseResult with success status and AST
+    """
+    try:
+        parser = AnamorphParser(debug=debug)
+        ast = parser.parse(source_code, filename)
+        
+        return ParseResult(
+            success=True,
+            ast=ast,
+            errors=[],
+            warnings=[]
+        )
+    except Exception as e:
+        return ParseResult(
+            success=False,
+            ast=None,
+            errors=[str(e)],
+            warnings=[]
+        )
+
+
+async def parse_async(source_code: str, filename: str = "<source>", debug: bool = False) -> ParseResult:
+    """
+    Asynchronous version of parse.
+    
+    Args:
+        source_code: The Anamorph source code to parse
+        filename: Optional filename for error reporting  
+        debug: Enable debug output
+        
+    Returns:
+        ParseResult with success status and AST
+    """
+    # For now, just use synchronous parsing
+    # In future could implement actual async parsing for large files
+    return parse(source_code, filename, debug)
+
+
+def parse_file(filename: str, debug: bool = False) -> ParseResult:
+    """
+    Parse a file and return ParseResult.
+    
+    Args:
+        filename: Path to the Anamorph source file to parse
+        debug: Enable debug output
+        
+    Returns:
+        ParseResult with success status and AST
+    """
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            source_code = f.read()
+        
+        return parse(source_code, filename, debug)
+    except FileNotFoundError:
+        return ParseResult(
+            success=False,
+            ast=None,
+            errors=[f"File not found: {filename}"],
+            warnings=[]
+        )
+    except Exception as e:
+        return ParseResult(
+            success=False,
+            ast=None,
+            errors=[f"Error reading file {filename}: {str(e)}"],
+            warnings=[]
+        )
+
+
+async def parse_file_async(filename: str, debug: bool = False) -> ParseResult:
+    """
+    Asynchronously parse a file and return ParseResult.
+    
+    Args:
+        filename: Path to the Anamorph source file to parse
+        debug: Enable debug output
+        
+    Returns:
+        ParseResult with success status and AST
+    """
+    # For now, just use synchronous file parsing
+    # In future could implement actual async file I/O
+    return parse_file(filename, debug)
+
+
 # Demo function
 def demo_parser():
     """Demonstrate parser functionality."""

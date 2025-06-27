@@ -672,8 +672,6 @@ class MigrateCommand(FlowControlCommand):
 # =============================================================================
 
 COMMUNICATION_COMMANDS = [
-    EncryptCommand(),
-    DecryptCommand(),
     NotifyCommand(),
     MigrateCommand()
 ] 

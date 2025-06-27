@@ -806,11 +806,5 @@ class HaltCommand(FlowControlCommand):
 
 # Регистрируем все команды
 ADVANCED_FLOW_COMMANDS = [
-    ReflectCommand(),
-    AbsorbCommand(),
-    DiffuseCommand(),
-    MergeCommand(),
-    SplitCommand(),
-    LoopCommand(),
-    HaltCommand()
+    # Дублирующиеся команды удалены - используются версии из flow_control_commands.py
 ] 

@@ -1,0 +1,387 @@
+// AnamorphX API Handlers
+// API обработчики с машинным обучением
+
+// Сеть для обработки API запросов
+network APINetwork {
+    neuron UserAPILayer {
+        activation: relu
+        units: 128
+        description: "Обработка пользовательских API"
+    }
+    
+    neuron DataAPILayer {
+        activation: sigmoid  
+        units: 64
+        description: "Обработка данных API"
+    }
+    
+    neuron MLAPILayer {
+        activation: softmax
+        units: 32
+        description: "Машинное обучение API"
+    }
+}
+
+// Обработчик пользователей API
+neuro handleUsersAPI(request: HttpRequest): HttpResponse {
+    synap method = request.method
+    synap userId = extractUserIdFromPath(request.path)
+    
+    // GET /api/users - получить список пользователей
+    if (method == "GET" && !userId) {
+        synap users = database.query("SELECT * FROM users LIMIT 100")
+        
+        return createResponse(200, JSON.stringify({
+            success: true,
+            data: users,
+            count: users.length
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    // GET /api/users/{id} - получить пользователя по ID
+    else if (method == "GET" && userId) {
+        synap user = database.queryOne("SELECT * FROM users WHERE id = ?", [userId])
+        
+        if (user) {
+            return createResponse(200, JSON.stringify({
+                success: true,
+                data: user
+            }), {
+                "Content-Type": "application/json"
+            })
+        } else {
+            return createErrorResponse(404, "User not found")
+        }
+    }
+    
+    // POST /api/users - создать нового пользователя
+    else if (method == "POST") {
+        synap userData = JSON.parse(request.body)
+        
+        // Валидация данных
+        validate {
+            input: userData
+            schema: "user_schema"
+            required: ["name", "email"]
+        }
+        
+        // Проверка на дубликаты
+        synap existingUser = database.queryOne("SELECT id FROM users WHERE email = ?", [userData.email])
+        
+        if (existingUser) {
+            return createErrorResponse(409, "User with this email already exists")
+        }
+        
+        // Создание пользователя
+        synap newUserId = database.insert("users", userData)
+        
+        log {
+            level: "info"
+            message: "New user created: " + newUserId
+        }
+        
+        return createResponse(201, JSON.stringify({
+            success: true,
+            data: { id: newUserId },
+            message: "User created successfully"
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    // PUT /api/users/{id} - обновить пользователя
+    else if (method == "PUT" && userId) {
+        synap userData = JSON.parse(request.body)
+        
+        validate {
+            input: userData
+            schema: "user_update_schema"
+        }
+        
+        synap rowsAffected = database.update("users", userData, "id = ?", [userId])
+        
+        if (rowsAffected > 0) {
+            return createResponse(200, JSON.stringify({
+                success: true,
+                message: "User updated successfully"
+            }), {
+                "Content-Type": "application/json"
+            })
+        } else {
+            return createErrorResponse(404, "User not found")
+        }
+    }
+    
+    // DELETE /api/users/{id} - удалить пользователя
+    else if (method == "DELETE" && userId) {
+        synap rowsAffected = database.delete("users", "id = ?", [userId])
+        
+        if (rowsAffected > 0) {
+            log {
+                level: "info"
+                message: "User deleted: " + userId
+            }
+            
+            return createResponse(200, JSON.stringify({
+                success: true,
+                message: "User deleted successfully"
+            }), {
+                "Content-Type": "application/json"
+            })
+        } else {
+            return createErrorResponse(404, "User not found")
+        }
+    }
+    
+    else {
+        return createErrorResponse(405, "Method not allowed")
+    }
+}
+
+// Обработчик данных API
+neuro handleDataAPI(request: HttpRequest): HttpResponse {
+    synap method = request.method
+    synap dataType = extractDataTypeFromPath(request.path)
+    
+    // Аналитика данных с ML
+    if (dataType == "analytics") {
+        synap timeRange = request.query["timeRange"] || "24h"
+        synap analyticsData = generateAnalytics(timeRange)
+        
+        // Применяем ML для предсказаний
+        synap predictions = MLAPILayer.predict(analyticsData)
+        
+        return createResponse(200, JSON.stringify({
+            success: true,
+            data: analyticsData,
+            predictions: predictions,
+            insights: generateInsights(analyticsData, predictions)
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    // Обработка файлов
+    else if (dataType == "upload" && method == "POST") {
+        synap file = extractFileFromRequest(request)
+        
+        // Проверка типа файла
+        validate {
+            input: file
+            rules: ["allowed_file_types", "max_file_size"]
+        }
+        
+        // Сканирование на вирусы
+        synap scanResult = scanForMalware(file)
+        
+        if (!scanResult.isSafe) {
+            alert {
+                level: "warning"
+                message: "Malicious file upload attempt detected"
+            }
+            
+            return createErrorResponse(400, "File contains malicious content")
+        }
+        
+        // Сохранение файла
+        synap filePath = saveFile(file)
+        
+        return createResponse(200, JSON.stringify({
+            success: true,
+            data: { filePath: filePath },
+            message: "File uploaded successfully"
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    else {
+        return createErrorResponse(400, "Invalid data API endpoint")
+    }
+}
+
+// Обработчик ML API
+neuro handleMLAPI(request: HttpRequest): HttpResponse {
+    synap method = request.method
+    synap mlAction = extractMLActionFromPath(request.path)
+    
+    // Обучение модели
+    if (mlAction == "train" && method == "POST") {
+        synap trainingData = JSON.parse(request.body)
+        
+        // Валидация обучающих данных
+        validate {
+            input: trainingData
+            schema: "training_data_schema"
+        }
+        
+        // Запуск обучения в фоновом режиме
+        background trainModel(trainingData) {
+            log {
+                level: "info" 
+                message: "ML model training started"
+            }
+            
+            synap result = MLAPILayer.train(trainingData)
+            
+            notify {
+                target: "ml_admin@server.com"
+                subject: "ML Training Completed"
+                message: "Training completed with accuracy: " + result.accuracy
+            }
+        }
+        
+        return createResponse(202, JSON.stringify({
+            success: true,
+            message: "Training started",
+            trainingId: generateTrainingId()
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    // Предсказание
+    else if (mlAction == "predict" && method == "POST") {
+        synap inputData = JSON.parse(request.body)
+        
+        validate {
+            input: inputData
+            schema: "prediction_input_schema"
+        }
+        
+        synap prediction = MLAPILayer.predict(inputData)
+        synap confidence = MLAPILayer.getConfidence(prediction)
+        
+        return createResponse(200, JSON.stringify({
+            success: true,
+            data: {
+                prediction: prediction,
+                confidence: confidence,
+                timestamp: getCurrentTime()
+            }
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    // Статистика модели
+    else if (mlAction == "stats" && method == "GET") {
+        synap modelStats = {
+            accuracy: MLAPILayer.getAccuracy(),
+            trainingEpochs: MLAPILayer.getEpochs(),
+            lastTrained: MLAPILayer.getLastTrainingTime(),
+            modelSize: MLAPILayer.getModelSize(),
+            predictions: MLAPILayer.getTotalPredictions()
+        }
+        
+        return createResponse(200, JSON.stringify({
+            success: true,
+            data: modelStats
+        }), {
+            "Content-Type": "application/json"
+        })
+    }
+    
+    else {
+        return createErrorResponse(400, "Invalid ML API endpoint")
+    }
+}
+
+// Обработчик здоровья системы
+neuro healthHandler(request: HttpRequest): HttpResponse {
+    synap systemHealth = {
+        status: "healthy",
+        uptime: getUptime(),
+        memoryUsage: getMemoryUsage(),
+        cpuUsage: getCPUUsage(),
+        diskSpace: getDiskSpace(),
+        activeConnections: getActiveConnections(),
+        databaseStatus: checkDatabaseConnection(),
+        neuralNetworkStatus: checkNeuralNetworkHealth()
+    }
+    
+    // Определение общего статуса
+    synap overallStatus = "healthy"
+    
+    if (systemHealth.memoryUsage > 90 || systemHealth.cpuUsage > 95) {
+        overallStatus = "degraded"
+    }
+    
+    if (!systemHealth.databaseStatus || !systemHealth.neuralNetworkStatus) {
+        overallStatus = "unhealthy"
+    }
+    
+    systemHealth.status = overallStatus
+    
+    synap statusCode = (overallStatus == "healthy") ? 200 : 503
+    
+    return createResponse(statusCode, JSON.stringify(systemHealth), {
+        "Content-Type": "application/json"
+    })
+}
+
+// Обработчик метрик
+neuro metricsHandler(request: HttpRequest): HttpResponse {
+    synap metrics = {
+        requests: {
+            total: getTotalRequests(),
+            perMinute: getRequestsPerMinute(),
+            successful: getSuccessfulRequests(),
+            failed: getFailedRequests()
+        },
+        
+        performance: {
+            averageResponseTime: getAverageResponseTime(),
+            slowestEndpoint: getSlowestEndpoint(),
+            fastestEndpoint: getFastestEndpoint()
+        },
+        
+        neural: {
+            predictions: getMLinPredictions(),
+            accuracy: getMLAccuracy(),
+            trainingTime: getLastTrainingTime()
+        },
+        
+        security: {
+            blockedRequests: getBlockedRequests(),
+            bannedIPs: getBannedIPsCount(),
+            securityAlerts: getSecurityAlerts()
+        }
+    }
+    
+    return createResponse(200, JSON.stringify(metrics), {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache"
+    })
+}
+
+// Вспомогательные функции
+function extractUserIdFromPath(path: string): string {
+    synap parts = path.split("/")
+    if (parts.length >= 4 && parts[2] == "users") {
+        return parts[3]
+    }
+    return null
+}
+
+function extractDataTypeFromPath(path: string): string {
+    synap parts = path.split("/")
+    if (parts.length >= 4 && parts[2] == "data") {
+        return parts[3]
+    }
+    return null
+}
+
+function extractMLActionFromPath(path: string): string {
+    synap parts = path.split("/")
+    if (parts.length >= 4 && parts[2] == "ml") {
+        return parts[3]
+    }
+    return null
+}
+
+function generateTrainingId(): string {
+    return "train_" + getCurrentTime() + "_" + Math.random().toString(36).substring(2, 15)
+} 

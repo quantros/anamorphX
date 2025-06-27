@@ -1,0 +1,37 @@
+# Quick Start Configuration for AnamorphX Enterprise Neural Server
+
+server:
+  host: "localhost"
+  port: 8080
+  redis_url: null  # Отключен для упрощения
+
+neural:
+  device: "auto"
+  max_workers: 2
+  model_config:
+    vocab_size: 1000
+    embedding_dim: 64
+    hidden_dim: 128
+    num_layers: 2
+    num_classes: 5
+    dropout: 0.2
+
+auth:
+  jwt_secret: "quick-start-secret-change-in-production"
+
+security:
+  cors_origins: ["*"]
+  rate_limit:
+    requests_per_minute: 120
+
+frontend:
+  static_dir: "frontend/dist"
+  enable_caching: false
+
+logging:
+  level: "INFO"
+  file: "logs/quick_start.log"
+
+metrics:
+  redis_url: null  # Отключен для упрощения
+  enable_prometheus: false

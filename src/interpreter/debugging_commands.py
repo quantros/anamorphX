@@ -570,14 +570,6 @@ class WatchCommand(DebuggingCommand):
         return CommandResult(success=True, message="Переменная добавлена в наблюдение", data={})
 
 
-class EvaluateCommand(DebuggingCommand):
-    def __init__(self):
-        super().__init__(name="evaluate", description="Вычисление выражений", parameters={})
-    
-    def execute(self, context: ExecutionContext, **kwargs) -> CommandResult:
-        return CommandResult(success=True, message="Выражение вычислено", data={})
-
-
 class ProfilerCommand(DebuggingCommand):
     def __init__(self):
         super().__init__(name="profiler", description="Профилирование кода", parameters={})
@@ -586,26 +578,15 @@ class ProfilerCommand(DebuggingCommand):
         return CommandResult(success=True, message="Профилирование запущено", data={})
 
 
-class LogCommand(DebuggingCommand):
-    def __init__(self):
-        super().__init__(name="log", description="Логирование отладочной информации", parameters={})
-    
-    def execute(self, context: ExecutionContext, **kwargs) -> CommandResult:
-        return CommandResult(success=True, message="Лог записан", data={})
-
-
 # Регистрируем все команды отладки
 DEBUGGING_COMMANDS = [
     DebugCommand(),
-    TraceCommand(),
     InspectCommand(),
     BreakpointCommand(),
     StepCommand(),
     ContinueCommand(),
     WatchCommand(),
-    EvaluateCommand(),
     ProfilerCommand(),
-    LogCommand()
 ]
 
 # Экспортируем команды для использования в других модулях
