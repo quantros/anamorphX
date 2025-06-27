@@ -125,6 +125,10 @@ pip install -r requirements.txt
 # Launch the ML IDE
 python run_full_ml_interpreter_ide.py
 ```
+## Further Documentation
+- [Comprehensive Overview](docs/COMPREHENSIVE_OVERVIEW.md)
+- [Developer Guide](docs/DEVELOPER_GUIDE.md)
+
 
 ## 📁 Project Structure
 

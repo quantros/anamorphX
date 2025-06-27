@@ -115,4 +115,4 @@ uvicorn src.api.main:app --reload
 
 ---
 
-**🧠 Ready to start coding the future of neural programming! 🚀** 
+**🧠 Ready to start coding the future of neural programming! 🚀**
