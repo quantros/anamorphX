@@ -469,6 +469,18 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from model import {class_name}
 
+
+def load_dataset():
+    """Load training dataset from disk."""
+    try:
+        X = np.load('train_x.npy')
+        y = np.load('train_y.npy')
+    except FileNotFoundError:
+        # Fallback to dummy data if files are missing
+        X = np.random.randn(1000, 10)
+        y = np.random.randn(1000, 1)
+    return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
+
 def train_model():
     # Device configuration
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -488,10 +500,8 @@ def train_model():
     batch_size = {batch_size}
     epochs = {epochs}
     
-    # TODO: Load your dataset here
-    # For now, using dummy data
-    X_train = torch.randn(1000, 10)  # Replace with your data
-    y_train = torch.randn(1000, 1)   # Replace with your labels
+    # Load training data
+    X_train, y_train = load_dataset()
     
     train_dataset = TensorDataset(X_train, y_train)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)

@@ -813,3 +813,8 @@ class ExportSpecifier(ASTNode):
 
     def accept(self, visitor: 'ASTVisitor') -> Any:
         return visitor.visit_export_specifier(self) 
+# Forward reference for ASTVisitor
+class ASTVisitor:
+    """Forward reference for visitor pattern."""
+    pass
+

@@ -20,13 +20,12 @@ from .errors import (
     ParseErrorHandler,
 )
 
-# TODO: Implement grammar module
-# from .grammar import (
-#     GrammarRule,
-#     ProductionRule,
-#     GrammarValidator,
-#     validate_grammar,
-# )
+from .grammar import (
+    GrammarRule,
+    ProductionRule,
+    GrammarValidator,
+    validate_grammar,
+)
 
 # Package version
 __version__ = "0.1.0"
@@ -46,9 +45,9 @@ __all__ = [
     'RecoveryAction',
     'ParseErrorHandler',
     
-    # Grammar validation (TODO: implement)
-    # 'GrammarRule',
-    # 'ProductionRule',
-    # 'GrammarValidator',
-    # 'validate_grammar',
-] 
+    # Grammar validation helpers
+    'GrammarRule',
+    'ProductionRule',
+    'GrammarValidator',
+    'validate_grammar',
+]
