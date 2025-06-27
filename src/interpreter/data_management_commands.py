@@ -343,118 +343,6 @@ class CacheCommand(DataManagementCommand):
             )
 
 
-class BackupCommand(DataManagementCommand):
-    """Резервное копирование"""
-    
-    def __init__(self):
-        super().__init__("backup", "Create backup of data")
-    
-    def execute(self, context: ExecutionContext, **kwargs) -> CommandResult:
-        try:
-            target = kwargs.get('target', 'all')  # 'all', 'nodes', 'storage', specific node
-            backup_name = kwargs.get('name', f"backup_{int(time.time())}")
-            compress = kwargs.get('compress', True)
-            
-            # Инициализация системы резервного копирования
-            if not hasattr(context.neural_network, 'backups'):
-                context.neural_network.backups = {}
-            
-            backup_data = {}
-            backup_id = str(uuid.uuid4())
-            
-            if target == 'all' or target == 'nodes':
-                # Резервное копирование узлов
-                nodes_backup = {}
-                for node_name, node in context.neural_network.nodes.items():
-                    nodes_backup[node_name] = {
-                        'id': node.id,
-                        'name': node.name,
-                        'type': node.node_type.value,
-                        'state': node.state,
-                        'data': node.data,
-                        'metadata': node.metadata,
-                        'created_at': node.created_at
-                    }
-                backup_data['nodes'] = nodes_backup
-            
-            if target == 'all' or target == 'storage':
-                # Резервное копирование хранилища данных
-                if hasattr(context.neural_network, 'data_storage'):
-                    storage_backup = {}
-                    for key, record in context.neural_network.data_storage.items():
-                        storage_backup[key] = {
-                            'id': record.id,
-                            'key': record.key,
-                            'data': record.data,
-                            'storage_type': record.storage_type.value,
-                            'created_at': record.created_at,
-                            'size': record.size,
-                            'checksum': record.checksum,
-                            'metadata': record.metadata
-                        }
-                    backup_data['storage'] = storage_backup
-            
-            if target not in ['all', 'nodes', 'storage']:
-                # Резервное копирование конкретного узла
-                if target in context.neural_network.nodes:
-                    node = context.neural_network.nodes[target]
-                    backup_data['node'] = {
-                        'id': node.id,
-                        'name': node.name,
-                        'type': node.node_type.value,
-                        'state': node.state,
-                        'data': node.data,
-                        'metadata': node.metadata,
-                        'created_at': node.created_at
-                    }
-                else:
-                    raise CommandError(f"Target '{target}' not found")
-            
-            # Сжатие данных если требуется
-            if compress:
-                backup_json = json.dumps(backup_data)
-                compressed_data = gzip.compress(backup_json.encode())
-                backup_size = len(compressed_data)
-                backup_data_final = compressed_data
-            else:
-                backup_data_final = backup_data
-                backup_size = len(json.dumps(backup_data))
-            
-            # Создание записи резервной копии
-            backup_record = {
-                'id': backup_id,
-                'name': backup_name,
-                'target': target,
-                'created_at': time.time(),
-                'size': backup_size,
-                'compressed': compress,
-                'data': backup_data_final,
-                'checksum': hashlib.sha256(str(backup_data_final).encode()).hexdigest()
-            }
-            
-            context.neural_network.backups[backup_id] = backup_record
-            
-            return CommandResult(
-                success=True,
-                data={
-                    'backup_id': backup_id,
-                    'name': backup_name,
-                    'target': target,
-                    'size': backup_size,
-                    'compressed': compress,
-                    'created_at': backup_record['created_at']
-                },
-                message=f"Backup '{backup_name}' created ({backup_size} bytes)"
-            )
-            
-        except Exception as e:
-            return CommandResult(
-                success=False,
-                error=str(e),
-                message=f"Backup failed: {e}"
-            )
-
-
 class RestoreCommand(DataManagementCommand):
     """Восстановление из резервной копии"""
     
@@ -706,64 +594,6 @@ class DecompressCommand(DataManagementCommand):
                 success=False,
                 error=str(e),
                 message=f"Decompression failed: {e}"
-            )
-
-
-class HashCommand(DataManagementCommand):
-    """Хеширование данных"""
-    
-    def __init__(self):
-        super().__init__("hash", "Generate hash of data")
-    
-    def execute(self, context: ExecutionContext, **kwargs) -> CommandResult:
-        try:
-            data = kwargs.get('data')
-            algorithm = kwargs.get('algorithm', 'sha256')
-            encoding = kwargs.get('encoding', 'utf-8')
-            
-            if data is None:
-                raise CommandError("Data to hash is required")
-            
-            # Преобразование данных в байты
-            if isinstance(data, str):
-                data_bytes = data.encode(encoding)
-            elif isinstance(data, bytes):
-                data_bytes = data
-            else:
-                data_str = json.dumps(data)
-                data_bytes = data_str.encode(encoding)
-            
-            # Генерация хеша
-            if algorithm == 'md5':
-                hash_obj = hashlib.md5(data_bytes)
-            elif algorithm == 'sha1':
-                hash_obj = hashlib.sha1(data_bytes)
-            elif algorithm == 'sha256':
-                hash_obj = hashlib.sha256(data_bytes)
-            elif algorithm == 'sha512':
-                hash_obj = hashlib.sha512(data_bytes)
-            else:
-                raise CommandError(f"Unsupported hash algorithm: {algorithm}")
-            
-            hash_hex = hash_obj.hexdigest()
-            
-            return CommandResult(
-                success=True,
-                data={
-                    'hash': hash_hex,
-                    'algorithm': algorithm,
-                    'encoding': encoding,
-                    'data_size': len(data_bytes),
-                    'hash_size': len(hash_hex)
-                },
-                message=f"Hash generated using {algorithm}: {hash_hex[:16]}..."
-            )
-            
-        except Exception as e:
-            return CommandResult(
-                success=False,
-                error=str(e),
-                message=f"Hashing failed: {e}"
             )
 
 
@@ -1026,11 +856,9 @@ DATA_MANAGEMENT_COMMANDS = [
     StoreCommand(),
     LoadCommand(),
     CacheCommand(),
-    BackupCommand(),
     RestoreCommand(),
     CompressCommand(),
     DecompressCommand(),
-    HashCommand(),
     VerifyCommand(),
     IndexCommand()
 ] 

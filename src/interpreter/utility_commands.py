@@ -652,14 +652,6 @@ class SortCommand(UtilityCommand):
         return CommandResult(success=True, message="Данные отсортированы", data={})
 
 
-class FilterCommand(UtilityCommand):
-    def __init__(self):
-        super().__init__(name="filter", description="Фильтрация данных", parameters={})
-    
-    def execute(self, context: ExecutionContext, **kwargs) -> CommandResult:
-        return CommandResult(success=True, message="Данные отфильтрованы", data={})
-
-
 # Регистрируем все утилитарные команды
 UTILITY_COMMANDS = [
     ConvertCommand(),
@@ -671,7 +663,6 @@ UTILITY_COMMANDS = [
     FormatCommand(),
     SearchCommand(),
     SortCommand(),
-    FilterCommand()
 ]
 
 # Экспортируем команды для использования в других модулях
@@ -679,5 +670,5 @@ __all__ = [
     'FileInfo', 'DataFormat', 'HashAlgorithm',
     'ConvertCommand', 'ValidateCommand', 'HashCommand', 'EncodeCommand',
     'DecodeCommand', 'GenerateCommand', 'FormatCommand', 'SearchCommand',
-    'SortCommand', 'FilterCommand', 'UTILITY_COMMANDS'
+    'SortCommand', 'UTILITY_COMMANDS'
 ]

@@ -1,0 +1,147 @@
+# 🏢 AnamorphX Enterprise Neural Server Configuration
+# =================================================
+
+metadata:
+  description: "AnamorphX Enterprise Neural Server Configuration"
+  version: "1.0.0"
+  generated: "2024-01-01T00:00:00Z"
+
+# 🌐 Server Configuration
+server:
+  host: "localhost"
+  port: 8080
+  redis_url: "redis://localhost:6379"
+  
+# 🧠 Neural Engine Configuration  
+neural:
+  device: "auto"  # auto, cpu, cuda
+  model_path: null  # Path to pretrained model (optional)
+  max_workers: 4
+  model_config:
+    vocab_size: 2000
+    embedding_dim: 128
+    hidden_dim: 256
+    num_layers: 3
+    num_classes: 10
+    dropout: 0.3
+    use_attention: true
+
+# 🔐 Authentication Configuration
+auth:
+  jwt_secret: "CHANGE-THIS-SECRET-IN-PRODUCTION-USE-64-CHAR-RANDOM-STRING"
+  token_expiry: 3600      # 1 hour in seconds
+  refresh_expiry: 86400   # 24 hours in seconds
+
+# 🔒 Security Configuration
+security:
+  cors_origins:
+    - "http://localhost:3000"    # React dev server
+    - "http://localhost:8081"    # Vue dev server
+    - "http://localhost:4200"    # Angular dev server
+  rate_limit:
+    requests_per_minute: 60
+  enable_https: false
+  ssl_cert_path: null
+  ssl_key_path: null
+
+# 🌐 Frontend Configuration
+frontend:
+  static_dir: "frontend/dist"
+  index_file: "index.html"
+  api_prefix: "/api"
+  enable_caching: true
+  cache_max_age: 3600
+
+# 📝 Logging Configuration
+logging:
+  level: "INFO"
+  file: "logs/anamorph.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_file_size: 10485760  # 10MB
+  backup_count: 5
+
+# 📊 Metrics Configuration
+metrics:
+  redis_url: "redis://localhost:6379"
+  collection_interval: 10
+  retention_days: 7
+  enable_prometheus: true
+
+# 🚀 Performance Tuning (Advanced)
+performance:
+  async_workers: 4
+  connection_pool_size: 100
+  request_timeout: 30
+  neural_batch_size: 16
+  enable_caching: true
+  cache_ttl: 300
+
+# 🔧 Development Settings
+development:
+  debug: false
+  auto_reload: false
+  mock_neural: false
+  log_requests: true
+  enable_profiling: false
+
+# 🏥 Health Check Configuration
+health:
+  check_interval: 30
+  neural_health_timeout: 5
+  redis_health_timeout: 2
+  disk_usage_threshold: 85
+  memory_usage_threshold: 90
+
+# 🎯 Custom Endpoints (Optional)
+custom_endpoints:
+  - path: "/custom/endpoint"
+    handler: "custom_handler"
+    methods: ["GET", "POST"]
+    auth_required: true
+    rate_limit: 120
+
+# 🌍 Localization
+localization:
+  default_language: "ru"
+  supported_languages: ["ru", "en"]
+  messages_file: "localization/messages.yaml"
+
+# 📧 Notifications (Optional)
+notifications:
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""
+    password: ""
+    from_address: "noreply@anamorph.ai"
+  
+  slack:
+    enabled: false
+    webhook_url: ""
+  
+  discord:
+    enabled: false
+    webhook_url: ""
+
+# 🔄 Backup Configuration
+backup:
+  enabled: false
+  interval_hours: 24
+  retention_days: 30
+  backup_path: "backups/"
+  include_logs: true
+  include_models: false
+
+# 🎮 Gaming Features (Fun extras)
+gaming:
+  enable_neural_challenges: false
+  leaderboard: false
+  achievements: false
+
+# 🔬 Experimental Features
+experimental:
+  enable_quantum_optimization: false
+  use_transformer_attention: false
+  enable_federated_learning: false
+  auto_model_optimization: false 

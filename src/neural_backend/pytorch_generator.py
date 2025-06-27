@@ -138,6 +138,7 @@ class PositionalEncoding(nn.Module):
         if has_resnet:
             helper_classes.append("""
 class ResNetBlock(nn.Module):
+    \"\"\"Базовый ResNet блок\"\"\"
     def __init__(self, in_channels, out_channels, stride=1, downsample=None):
         super(ResNetBlock, self).__init__()
         
@@ -164,6 +165,101 @@ class ResNetBlock(nn.Module):
         out = F.relu(out)
         
         return out
+
+
+class ResNetBottleneckBlock(nn.Module):
+    \"\"\"Bottleneck ResNet блок для ResNet-50/101/152\"\"\"
+    expansion = 4
+    
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+        super(ResNetBottleneckBlock, self).__init__()
+        
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        
+        self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
+        
+        self.downsample = downsample
+        
+    def forward(self, x):
+        identity = x
+        
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = F.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = F.relu(out)
+        
+        out = self.conv3(out)
+        out = self.bn3(out)
+        
+        if self.downsample is not None:
+            identity = self.downsample(x)
+        
+        out += identity
+        out = F.relu(out)
+        
+        return out
+
+
+class PreActResNetBlock(nn.Module):
+    \"\"\"Pre-activation ResNet блок (современная версия)\"\"\"
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+        super(PreActResNetBlock, self).__init__()
+        
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.downsample = downsample
+        
+    def forward(self, x):
+        identity = x
+        
+        out = self.bn1(x)
+        out = F.relu(out)
+        
+        if self.downsample is not None:
+            identity = self.downsample(out)
+        
+        out = self.conv1(out)
+        
+        out = self.bn2(out)
+        out = F.relu(out)
+        out = self.conv2(out)
+        
+        out += identity
+        
+        return out
+
+
+class DepthwiseSeparableConv(nn.Module):
+    \"\"\"Depthwise Separable Convolution для эффективных CNN\"\"\"
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+        super(DepthwiseSeparableConv, self).__init__()
+        
+        self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=kernel_size, 
+                                  stride=stride, padding=padding, groups=in_channels, bias=False)
+        self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.bn1(x)
+        x = F.relu(x)
+        
+        x = self.pointwise(x)
+        x = self.bn2(x)
+        x = F.relu(x)
+        
+        return x
 """)
         
         # Attention механизм
@@ -215,21 +311,443 @@ class MultiHeadSelfAttention(nn.Module):
         return out
 """)
         
-        # Depthwise Separable Convolution
-        has_depthwise = any(getattr(n, 'depthwise_separable', False) for n in network.neurons)
-        if has_depthwise:
-            helper_classes.append("""
-class DepthwiseSeparableConv(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
-        super(DepthwiseSeparableConv, self).__init__()
+        # RNN/LSTM helper classes
+        helper_classes.append(self._generate_rnn_helper_classes(network))
         
-        self.depthwise = nn.Conv2d(in_channels, in_channels, kernel_size=kernel_size, 
-                                 stride=stride, padding=padding, groups=in_channels, bias=False)
-        self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        # Vision Transformer (ViT) helper classes
+        helper_classes.append(self._generate_vit_helper_classes(network))
+        
+        return "\n".join(helper_classes)
+    
+    def _generate_rnn_helper_classes(self, network: NetworkConfig) -> str:
+        """Генерация RNN/LSTM вспомогательных классов"""
+        helper_classes = []
+        
+        # Проверяем наличие RNN слоев
+        has_lstm = any(n.layer_type == 'lstm' for n in network.neurons)
+        has_gru = any(n.layer_type == 'gru' for n in network.neurons)
+        has_rnn = any(n.layer_type == 'rnn' for n in network.neurons)
+        
+        if has_lstm or has_gru or has_rnn:
+            helper_classes.append("""
+class BidirectionalLSTM(nn.Module):
+    \"\"\"Bidirectional LSTM с конфигурируемыми параметрами\"\"\"
+    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0.0, batch_first=True):
+        super(BidirectionalLSTM, self).__init__()
+        
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.batch_first = batch_first
+        
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout if num_layers > 1 else 0,
+            bidirectional=True,
+            batch_first=batch_first
+        )
+        
+        # Линейный слой для объединения направлений
+        self.fc = nn.Linear(hidden_size * 2, hidden_size)
+        
+    def forward(self, x, hidden=None):
+        # x: (batch, seq_len, input_size) if batch_first=True
+        lstm_out, (h_n, c_n) = self.lstm(x, hidden)
+        
+        # lstm_out: (batch, seq_len, hidden_size * 2)
+        # Применяем линейный слой для объединения направлений
+        output = self.fc(lstm_out)
+        
+        return output, (h_n, c_n)
+
+
+class EnhancedGRU(nn.Module):
+    \"\"\"Enhanced GRU с attention механизмом\"\"\"
+    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0.0, 
+                 bidirectional=False, attention=False, batch_first=True):
+        super(EnhancedGRU, self).__init__()
+        
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.bidirectional = bidirectional
+        self.attention = attention
+        self.batch_first = batch_first
+        
+        self.gru = nn.GRU(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout if num_layers > 1 else 0,
+            bidirectional=bidirectional,
+            batch_first=batch_first
+        )
+        
+        # Attention механизм
+        if attention:
+            attention_hidden = hidden_size * 2 if bidirectional else hidden_size
+            self.attention_layer = nn.Linear(attention_hidden, 1)
+            self.softmax = nn.Softmax(dim=1)
+        
+        # Выходной слой
+        output_size = hidden_size * 2 if bidirectional else hidden_size
+        self.output_projection = nn.Linear(output_size, hidden_size)
+        
+    def forward(self, x, hidden=None):
+        # GRU forward pass
+        gru_out, h_n = self.gru(x, hidden)
+        
+        if self.attention:
+            # Применяем attention
+            attention_weights = self.attention_layer(gru_out)
+            attention_weights = self.softmax(attention_weights)
+            
+            # Взвешенная сумма
+            context = torch.sum(gru_out * attention_weights, dim=1, keepdim=True)
+            output = self.output_projection(context)
+        else:
+            # Берем последний выход
+            if self.batch_first:
+                output = gru_out[:, -1, :]  # (batch, hidden_size)
+            else:
+                output = gru_out[-1, :, :]  # (seq_len, batch, hidden_size)
+            
+            output = self.output_projection(output)
+        
+        return output, h_n
+
+
+class StackedLSTM(nn.Module):
+    \"\"\"Стек LSTM слоев с residual connections\"\"\"
+    def __init__(self, input_size, hidden_size, num_layers=2, dropout=0.2, 
+                 residual=True, batch_first=True):
+        super(StackedLSTM, self).__init__()
+        
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
+        self.residual = residual
+        self.batch_first = batch_first
+        
+        # Создаем слои LSTM
+        self.lstm_layers = nn.ModuleList()
+        
+        # Первый слой
+        self.lstm_layers.append(
+            nn.LSTM(input_size, hidden_size, 1, batch_first=batch_first)
+        )
+        
+        # Остальные слои
+        for i in range(1, num_layers):
+            self.lstm_layers.append(
+                nn.LSTM(hidden_size, hidden_size, 1, batch_first=batch_first)
+            )
+        
+        # Dropout между слоями
+        self.dropout = nn.Dropout(dropout)
+        
+        # Проекционные слои для residual connections
+        if residual and num_layers > 1:
+            self.projection_layers = nn.ModuleList([
+                nn.Linear(hidden_size, hidden_size) for _ in range(num_layers - 1)
+            ])
+        
+    def forward(self, x, hidden_states=None):
+        if hidden_states is None:
+            hidden_states = [None] * self.num_layers
+        
+        outputs = []
+        current_input = x
+        
+        for i, lstm_layer in enumerate(self.lstm_layers):
+            # LSTM forward pass
+            lstm_out, hidden_state = lstm_layer(current_input, hidden_states[i])
+            
+            # Residual connection (кроме первого слоя)
+            if self.residual and i > 0:
+                # Проекция для совпадения размерностей
+                projected_input = self.projection_layers[i-1](current_input)
+                if projected_input.shape == lstm_out.shape:
+                    lstm_out = lstm_out + projected_input
+            
+            # Dropout (кроме последнего слоя)
+            if i < self.num_layers - 1:
+                lstm_out = self.dropout(lstm_out)
+            
+            outputs.append(hidden_state)
+            current_input = lstm_out
+        
+        return current_input, outputs
+
+
+class LSTMWithAttention(nn.Module):
+    \"\"\"LSTM с механизмом внимания\"\"\"
+    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0.0, 
+                 attention_dim=None, batch_first=True):
+        super(LSTMWithAttention, self).__init__()
+        
+        self.hidden_size = hidden_size
+        self.attention_dim = attention_dim or hidden_size // 2
+        self.batch_first = batch_first
+        
+        # LSTM слой
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout if num_layers > 1 else 0,
+            batch_first=batch_first
+        )
+        
+        # Attention механизм
+        self.attention_W = nn.Linear(hidden_size, self.attention_dim)
+        self.attention_u = nn.Linear(self.attention_dim, 1, bias=False)
+        self.attention_softmax = nn.Softmax(dim=1)
+        
+        # Выходной слой
+        self.output_layer = nn.Linear(hidden_size, hidden_size)
+        
+    def forward(self, x, hidden=None):
+        # LSTM forward pass
+        lstm_out, (h_n, c_n) = self.lstm(x, hidden)
+        
+        # Attention mechanism
+        # lstm_out: (batch, seq_len, hidden_size)
+        attention_weights = self.attention_W(lstm_out)  # (batch, seq_len, attention_dim)
+        attention_weights = torch.tanh(attention_weights)
+        attention_weights = self.attention_u(attention_weights)  # (batch, seq_len, 1)
+        attention_weights = self.attention_softmax(attention_weights)  # (batch, seq_len, 1)
+        
+        # Применяем attention weights
+        context_vector = torch.sum(lstm_out * attention_weights, dim=1)  # (batch, hidden_size)
+        
+        # Финальный выход
+        output = self.output_layer(context_vector)
+        
+        return output, (h_n, c_n)
+""")
+        
+        return "\n".join(helper_classes)
+    
+    def _generate_vit_helper_classes(self, network: NetworkConfig) -> str:
+        """Генерация Vision Transformer (ViT) вспомогательных классов"""
+        helper_classes = []
+        
+        # Проверяем наличие ViT слоев
+        has_vit = any(n.layer_type == 'vision_transformer' for n in network.neurons)
+        has_patch_embed = any(n.layer_type == 'patch_embedding' for n in network.neurons)
+        
+        if has_vit or has_patch_embed:
+            helper_classes.append("""
+class PatchEmbedding(nn.Module):
+    \"\"\"Patch Embedding для Vision Transformer\"\"\"
+    def __init__(self, img_size=224, patch_size=16, in_channels=3, embed_dim=768):
+        super(PatchEmbedding, self).__init__()
+        
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.n_patches = (img_size // patch_size) ** 2
+        
+        # Projection layer for patch embedding
+        self.projection = nn.Conv2d(
+            in_channels, embed_dim, 
+            kernel_size=patch_size, stride=patch_size
+        )
         
     def forward(self, x):
-        x = self.depthwise(x)
-        x = self.pointwise(x)
+        # x: (batch_size, channels, height, width)
+        x = self.projection(x)  # (batch_size, embed_dim, n_patches_h, n_patches_w)
+        x = x.flatten(2)        # (batch_size, embed_dim, n_patches)
+        x = x.transpose(1, 2)   # (batch_size, n_patches, embed_dim)
+        return x
+
+
+class VisionTransformerBlock(nn.Module):
+    \"\"\"Блок Vision Transformer\"\"\"
+    def __init__(self, embed_dim=768, num_heads=12, mlp_ratio=4.0, dropout=0.1):
+        super(VisionTransformerBlock, self).__init__()
+        
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.attention = nn.MultiheadAttention(
+            embed_dim, num_heads, dropout=dropout, batch_first=True
+        )
+        
+        self.norm2 = nn.LayerNorm(embed_dim)
+        
+        # MLP
+        mlp_hidden_dim = int(embed_dim * mlp_ratio)
+        self.mlp = nn.Sequential(
+            nn.Linear(embed_dim, mlp_hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(mlp_hidden_dim, embed_dim),
+            nn.Dropout(dropout)
+        )
+        
+    def forward(self, x):
+        # Multi-head attention with residual connection
+        x_norm = self.norm1(x)
+        attn_output, _ = self.attention(x_norm, x_norm, x_norm)
+        x = x + attn_output
+        
+        # MLP with residual connection
+        x_norm = self.norm2(x)
+        mlp_output = self.mlp(x_norm)
+        x = x + mlp_output
+        
+        return x
+
+
+class VisionTransformer(nn.Module):
+    \"\"\"Complete Vision Transformer\"\"\"
+    def __init__(self, img_size=224, patch_size=16, in_channels=3, embed_dim=768,
+                 num_layers=12, num_heads=12, mlp_ratio=4.0, num_classes=1000, dropout=0.1):
+        super(VisionTransformer, self).__init__()
+        
+        self.embed_dim = embed_dim
+        self.num_patches = (img_size // patch_size) ** 2
+        
+        # Patch embedding
+        self.patch_embedding = PatchEmbedding(img_size, patch_size, in_channels, embed_dim)
+        
+        # Class token
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        
+        # Positional embedding
+        self.pos_embedding = nn.Parameter(torch.zeros(1, self.num_patches + 1, embed_dim))
+        
+        # Dropout
+        self.dropout = nn.Dropout(dropout)
+        
+        # Transformer blocks
+        self.transformer_blocks = nn.ModuleList([
+            VisionTransformerBlock(embed_dim, num_heads, mlp_ratio, dropout)
+            for _ in range(num_layers)
+        ])
+        
+        # Classification head
+        self.norm = nn.LayerNorm(embed_dim)
+        self.head = nn.Linear(embed_dim, num_classes)
+        
+        # Initialize weights
+        self._init_weights()
+        
+    def _init_weights(self):
+        nn.init.trunc_normal_(self.pos_embedding, std=0.02)
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
+        
+    def forward(self, x):
+        batch_size = x.shape[0]
+        
+        # Patch embedding
+        x = self.patch_embedding(x)  # (batch_size, n_patches, embed_dim)
+        
+        # Add class token
+        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
+        x = torch.cat([cls_tokens, x], dim=1)  # (batch_size, n_patches + 1, embed_dim)
+        
+        # Add positional embedding
+        x = x + self.pos_embedding
+        x = self.dropout(x)
+        
+        # Apply transformer blocks
+        for block in self.transformer_blocks:
+            x = block(x)
+        
+        # Final norm
+        x = self.norm(x)
+        
+        # Classification head (use cls token)
+        cls_token_final = x[:, 0]
+        logits = self.head(cls_token_final)
+        
+        return logits
+
+
+class DeiTBlock(nn.Module):
+    \"\"\"Data-efficient Image Transformer блок\"\"\"
+    def __init__(self, embed_dim=384, num_heads=6, mlp_ratio=4.0, dropout=0.1, 
+                 drop_path=0.0):
+        super(DeiTBlock, self).__init__()
+        
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.attention = nn.MultiheadAttention(
+            embed_dim, num_heads, dropout=dropout, batch_first=True
+        )
+        
+        # Drop path (stochastic depth)
+        self.drop_path = nn.Dropout(drop_path) if drop_path > 0.0 else nn.Identity()
+        
+        self.norm2 = nn.LayerNorm(embed_dim)
+        
+        # MLP
+        mlp_hidden_dim = int(embed_dim * mlp_ratio)
+        self.mlp = nn.Sequential(
+            nn.Linear(embed_dim, mlp_hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(mlp_hidden_dim, embed_dim),
+            nn.Dropout(dropout)
+        )
+        
+    def forward(self, x):
+        # Multi-head attention with residual connection and drop path
+        x_norm = self.norm1(x)
+        attn_output, _ = self.attention(x_norm, x_norm, x_norm)
+        x = x + self.drop_path(attn_output)
+        
+        # MLP with residual connection and drop path
+        x_norm = self.norm2(x)
+        mlp_output = self.mlp(x_norm)
+        x = x + self.drop_path(mlp_output)
+        
+        return x
+
+
+class SwinTransformerBlock(nn.Module):
+    \"\"\"Swin Transformer блок с shifted window attention\"\"\"
+    def __init__(self, embed_dim=96, num_heads=3, window_size=7, shift_size=0,
+                 mlp_ratio=4.0, dropout=0.1):
+        super(SwinTransformerBlock, self).__init__()
+        
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.window_size = window_size
+        self.shift_size = shift_size
+        self.mlp_ratio = mlp_ratio
+        
+        self.norm1 = nn.LayerNorm(embed_dim)
+        
+        # Window-based multi-head self attention
+        self.attention = nn.MultiheadAttention(
+            embed_dim, num_heads, dropout=dropout, batch_first=True
+        )
+        
+        self.norm2 = nn.LayerNorm(embed_dim)
+        
+        # MLP
+        mlp_hidden_dim = int(embed_dim * mlp_ratio)
+        self.mlp = nn.Sequential(
+            nn.Linear(embed_dim, mlp_hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(mlp_hidden_dim, embed_dim),
+            nn.Dropout(dropout)
+        )
+        
+    def forward(self, x):
+        # Simplified Swin implementation (without actual window partitioning)
+        # This is a basic version for demonstration
+        
+        # Layer norm and attention
+        x_norm = self.norm1(x)
+        attn_output, _ = self.attention(x_norm, x_norm, x_norm)
+        x = x + attn_output
+        
+        # Layer norm and MLP
+        x_norm = self.norm2(x)
+        mlp_output = self.mlp(x_norm)
+        x = x + mlp_output
+        
         return x
 """)
         
@@ -275,13 +793,46 @@ class DepthwiseSeparableConv(nn.Module):
                 units = neuron.units or 128
                 num_layers = getattr(neuron, 'num_layers', 1)
                 bidirectional = getattr(neuron, 'bidirectional', False)
-                layer_def = f"        self.{layer_name} = nn.LSTM(input_size, {units}, num_layers={num_layers}, bidirectional={bidirectional}, batch_first=True)"
+                attention = getattr(neuron, 'attention', False)
+                residual = getattr(neuron, 'residual', False)
+                
+                # Выбираем тип LSTM в зависимости от параметров
+                if bidirectional and not attention and not residual:
+                    layer_def = f"        self.{layer_name} = BidirectionalLSTM(input_size, {units}, num_layers={num_layers}, batch_first=True)"
+                elif attention:
+                    attention_dim = getattr(neuron, 'attention_dim', units // 2)
+                    layer_def = f"        self.{layer_name} = LSTMWithAttention(input_size, {units}, num_layers={num_layers}, attention_dim={attention_dim}, batch_first=True)"
+                elif residual and num_layers > 1:
+                    dropout = neuron.dropout or 0.2
+                    layer_def = f"        self.{layer_name} = StackedLSTM(input_size, {units}, num_layers={num_layers}, dropout={dropout}, residual=True, batch_first=True)"
+                else:
+                    # Стандартный LSTM
+                    dropout = neuron.dropout or 0.0
+                    layer_def = f"        self.{layer_name} = nn.LSTM(input_size, {units}, num_layers={num_layers}, dropout={dropout if num_layers > 1 else 0}, bidirectional={bidirectional}, batch_first=True)"
             
             elif neuron.layer_type == 'gru':
                 units = neuron.units or 128
                 num_layers = getattr(neuron, 'num_layers', 1)
                 bidirectional = getattr(neuron, 'bidirectional', False)
-                layer_def = f"        self.{layer_name} = nn.GRU(input_size, {units}, num_layers={num_layers}, bidirectional={bidirectional}, batch_first=True)"
+                attention = getattr(neuron, 'attention', False)
+                
+                # Enhanced GRU с attention или стандартный
+                if attention or bidirectional:
+                    dropout = neuron.dropout or 0.0
+                    layer_def = f"        self.{layer_name} = EnhancedGRU(input_size, {units}, num_layers={num_layers}, dropout={dropout}, bidirectional={bidirectional}, attention={attention}, batch_first=True)"
+                else:
+                    # Стандартный GRU
+                    dropout = neuron.dropout or 0.0
+                    layer_def = f"        self.{layer_name} = nn.GRU(input_size, {units}, num_layers={num_layers}, dropout={dropout if num_layers > 1 else 0}, batch_first=True)"
+            
+            elif neuron.layer_type == 'rnn':
+                units = neuron.units or 128
+                num_layers = getattr(neuron, 'num_layers', 1)
+                nonlinearity = getattr(neuron, 'nonlinearity', 'tanh')  # 'tanh' или 'relu'
+                bidirectional = getattr(neuron, 'bidirectional', False)
+                dropout = neuron.dropout or 0.0
+                
+                layer_def = f"        self.{layer_name} = nn.RNN(input_size, {units}, num_layers={num_layers}, nonlinearity='{nonlinearity}', dropout={dropout if num_layers > 1 else 0}, bidirectional={bidirectional}, batch_first=True)"
             
             elif neuron.layer_type == 'transformer':
                 embed_dim = neuron.embed_dim or 512
@@ -326,6 +877,54 @@ class DepthwiseSeparableConv(nn.Module):
             elif neuron.layer_type == 'layer_norm':
                 normalized_shape = getattr(neuron, 'normalized_shape', 512)
                 layer_def = f"        self.{layer_name} = nn.LayerNorm({normalized_shape})"
+            
+            elif neuron.layer_type == 'vision_transformer':
+                img_size = getattr(neuron, 'img_size', 224)
+                patch_size = getattr(neuron, 'patch_size', 16)
+                in_channels = getattr(neuron, 'in_channels', 3)
+                embed_dim = neuron.embed_dim or 768
+                num_layers = getattr(neuron, 'num_layers', 12)
+                num_heads = neuron.num_heads or 12
+                mlp_ratio = getattr(neuron, 'mlp_ratio', 4.0)
+                num_classes = getattr(neuron, 'num_classes', 1000)
+                dropout = neuron.dropout or 0.1
+                
+                layer_def = f"        self.{layer_name} = VisionTransformer(img_size={img_size}, patch_size={patch_size}, in_channels={in_channels}, embed_dim={embed_dim}, num_layers={num_layers}, num_heads={num_heads}, mlp_ratio={mlp_ratio}, num_classes={num_classes}, dropout={dropout})"
+            
+            elif neuron.layer_type == 'patch_embedding':
+                img_size = getattr(neuron, 'img_size', 224)
+                patch_size = getattr(neuron, 'patch_size', 16)
+                in_channels = getattr(neuron, 'in_channels', 3)
+                embed_dim = neuron.embed_dim or 768
+                
+                layer_def = f"        self.{layer_name} = PatchEmbedding(img_size={img_size}, patch_size={patch_size}, in_channels={in_channels}, embed_dim={embed_dim})"
+            
+            elif neuron.layer_type == 'vit_block':
+                embed_dim = neuron.embed_dim or 768
+                num_heads = neuron.num_heads or 12
+                mlp_ratio = getattr(neuron, 'mlp_ratio', 4.0)
+                dropout = neuron.dropout or 0.1
+                
+                layer_def = f"        self.{layer_name} = VisionTransformerBlock(embed_dim={embed_dim}, num_heads={num_heads}, mlp_ratio={mlp_ratio}, dropout={dropout})"
+            
+            elif neuron.layer_type == 'deit_block':
+                embed_dim = neuron.embed_dim or 384
+                num_heads = neuron.num_heads or 6
+                mlp_ratio = getattr(neuron, 'mlp_ratio', 4.0)
+                dropout = neuron.dropout or 0.1
+                drop_path = getattr(neuron, 'drop_path', 0.0)
+                
+                layer_def = f"        self.{layer_name} = DeiTBlock(embed_dim={embed_dim}, num_heads={num_heads}, mlp_ratio={mlp_ratio}, dropout={dropout}, drop_path={drop_path})"
+            
+            elif neuron.layer_type == 'swin_block':
+                embed_dim = neuron.embed_dim or 96
+                num_heads = neuron.num_heads or 3
+                window_size = getattr(neuron, 'window_size', 7)
+                shift_size = getattr(neuron, 'shift_size', 0)
+                mlp_ratio = getattr(neuron, 'mlp_ratio', 4.0)
+                dropout = neuron.dropout or 0.1
+                
+                layer_def = f"        self.{layer_name} = SwinTransformerBlock(embed_dim={embed_dim}, num_heads={num_heads}, window_size={window_size}, shift_size={shift_size}, mlp_ratio={mlp_ratio}, dropout={dropout})"
             
             else:
                 # Fallback to Dense
@@ -416,6 +1015,9 @@ class DepthwiseSeparableConv(nn.Module):
                 forward_lines.append(f"        x = self.{layer_name}(x)")
             
             elif neuron.layer_type == 'layer_norm':
+                forward_lines.append(f"        x = self.{layer_name}(x)")
+            
+            elif neuron.layer_type in ['vision_transformer', 'patch_embedding', 'vit_block', 'deit_block', 'swin_block']:
                 forward_lines.append(f"        x = self.{layer_name}(x)")
             
             else:

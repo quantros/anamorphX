@@ -1,0 +1,72 @@
+// AnamorphX Web Server Configuration
+// Конфигурация нейронного веб-сервера
+
+// Основные настройки сервера
+network ServerConfiguration {
+    neuron NetworkSettings {
+        host: "0.0.0.0"
+        port: 8080
+        maxConnections: 1000
+        timeout: 30000
+        enableSSL: true
+        sslCertPath: "/etc/ssl/server.crt"
+        sslKeyPath: "/etc/ssl/server.key"
+    }
+    
+    neuron SecuritySettings {
+        enableFirewall: true
+        maxRequestsPerMinute: 60
+        blacklistThreshold: 10
+        enableIPWhitelist: false
+        jwtSecret: "neural_server_jwt_secret_2024"
+        jwtExpiration: 3600
+    }
+    
+    neuron LoggingSettings {
+        logLevel: "info"
+        logToFile: true
+        logPath: "/var/log/anamorphx_server.log"
+        rotateSize: "100MB"
+        maxLogFiles: 10
+    }
+}
+
+// Настройки нейронной сети
+network NeuralConfiguration {
+    neuron MLSettings {
+        enableLearning: true
+        trainingInterval: 86400  // 24 часа
+        modelPath: "/models/web_server_model.anamorph"
+        backupPath: "/models/backup/"
+        minAccuracy: 0.85
+    }
+    
+    neuron PerformanceSettings {
+        enableCaching: true
+        cacheSize: "512MB"
+        enableCompression: true
+        compressionLevel: 6
+        enableLoadBalancing: true
+    }
+}
+
+// Маршрутизация
+synap routes = {
+    "/": "staticHandler",
+    "/api/*": "apiHandler", 
+    "/admin/*": "adminHandler",
+    "/health": "healthHandler",
+    "/metrics": "metricsHandler"
+}
+
+// Настройки базы данных
+synap database = {
+    type: "neural_db",
+    host: "localhost",
+    port: 5432,
+    name: "anamorphx_web",
+    username: "neural_user",
+    password: "neural_secure_password",
+    poolSize: 20,
+    enableEncryption: true
+} 

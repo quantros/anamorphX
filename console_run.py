@@ -1,0 +1,1 @@
+import sys; sys.path.append("src"); from apps.full_ml_interpreter_ide import AnamorphXInterpreter; interp = AnamorphXInterpreter(); print("🧠 AnamorphX Interpreter ready!"); code = open("Project/web_server.anamorph").read(); print("🚀 Executing web server..."); result = interp.execute_code(code); print("✅ Result:", result)
