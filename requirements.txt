@@ -152,4 +152,4 @@ kombu==5.3.4                # Messaging library
 # Development dependencies (optional)
 ipython==8.18.1             # Enhanced Python shell
 jupyter==1.0.0              # Jupyter notebooks
-notebook==7.0.6             # Jupyter notebook server 
+notebook==7.0.6             # Jupyter notebook server
