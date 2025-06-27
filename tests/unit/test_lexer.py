@@ -189,7 +189,7 @@ class TestLiterals:
             ('"hello"', "hello"),
             ('"Hello, World!"', "Hello, World!"),
             ("'single quotes'", "single quotes"),
-            ('"mixed \\'quotes\\'"', "mixed 'quotes'"),
+            ('"mixed \'quotes\'"', "mixed 'quotes'"),
         ]
         
         for source, expected_value in test_cases:

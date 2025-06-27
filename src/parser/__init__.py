@@ -8,10 +8,6 @@ including recursive descent parsing, AST generation, and error recovery.
 from .parser import (
     AnamorphParser,
     ParseResult,
-    parse,
-    parse_async,
-    parse_file,
-    parse_file_async,
 )
 
 from .errors import (
@@ -40,10 +36,6 @@ __all__ = [
     # Core parser
     'AnamorphParser',
     'ParseResult',
-    'parse',
-    'parse_async',
-    'parse_file',
-    'parse_file_async',
     
     # Error handling
     'ParseError',

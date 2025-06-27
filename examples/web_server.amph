@@ -1,0 +1,43 @@
+# Simple Web Server in AnamorphX
+neuro webServer {
+    synap config = {
+        port: 8080,
+        maxConnections: 100
+    };
+
+    guard securityLayer {
+        auth validateToken -> userCtx;
+        validate sanitizeInput;
+        filter maliciousPatterns;
+    }
+
+    resonate requestPipeline(req) -> res {
+        pulse req -> securityLayer -> safeReq;
+
+        if (safeReq.path.startsWith("/api/")) {
+            pulse safeReq -> apiHandler -> res;
+        } else {
+            pulse safeReq -> staticHandler -> res;
+        }
+    }
+
+    resonate serverLoop {
+        listen config.port -> incoming;
+
+        fold incoming -> processed {
+            pulse request -> requestPipeline -> response;
+            echo response -> client;
+        }
+    }
+}
+
+neuro apiHandler(req) {
+    synap result = database.query("SELECT * FROM data");
+    encode result -> jsonResponse;
+    return jsonResponse;
+}
+
+neuro staticHandler(req) {
+    return serveFile(req.path);
+}
+serverLoop();
