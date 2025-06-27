@@ -189,7 +189,7 @@ class TestLiterals:
             ('"hello"', "hello"),
             ('"Hello, World!"', "Hello, World!"),
             ("'single quotes'", "single quotes"),
-            ('"mixed \\'quotes\\'"', "mixed 'quotes'"),
+            ('"mixed \'quotes\'"', "mixed 'quotes'"),
         ]
         
         for source, expected_value in test_cases:
@@ -386,30 +386,32 @@ class TestErrorHandling:
 class TestAsyncTokenization:
     """Test asynchronous tokenization."""
     
-    @pytest.mark.asyncio
-    async def test_async_tokenize_basic(self):
+    def test_async_tokenize_basic(self):
         """Test basic async tokenization."""
         source = "neuro test { synap x = 42; }"
-        tokens = await tokenize_async(source)
-        
-        assert len(tokens) > 0
-        assert tokens[0].type == TokenType.NEURO
-        assert tokens[-1].type == TokenType.EOF
+
+        async def run():
+            tokens = await tokenize_async(source)
+            assert len(tokens) > 0
+            assert tokens[0].type == TokenType.NEURO
+            assert tokens[-1].type == TokenType.EOF
+
+        asyncio.run(run())
     
-    @pytest.mark.asyncio
-    async def test_async_tokenize_large_source(self):
+    def test_async_tokenize_large_source(self):
         """Test async tokenization with large source."""
         # Generate large source code
         lines = []
         for i in range(1000):
             lines.append(f"synap var{i} = {i};")
         source = "\n".join(lines)
-        
-        tokens = await tokenize_async(source)
-        
-        # Should have many SYNAP tokens
-        synap_tokens = [t for t in tokens if t.type == TokenType.SYNAP]
-        assert len(synap_tokens) == 1000
+
+        async def run():
+            tokens = await tokenize_async(source)
+            synap_tokens = [t for t in tokens if t.type == TokenType.SYNAP]
+            assert len(synap_tokens) == 1000
+
+        asyncio.run(run())
 
 
 class TestPositionTracking:

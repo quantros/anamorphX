@@ -34,6 +34,14 @@
 - **Performance Monitoring**: Built-in metrics and profiling
 - **Documentation**: Auto-generated docs for every model
 
+## 📝 Recent Updates
+
+- Added the **anamorph_core** package to expose lexer, parser and interpreter
+  classes as a single library
+- Introduced a minimal grammar module for validating parser rules
+- Added a dataset loader helper used by training scripts
+- Created example web server programs in `examples/web_server.amph`
+
 ## 🚀 Quick Start
 
 ### Example Code

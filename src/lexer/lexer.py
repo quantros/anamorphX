@@ -581,8 +581,9 @@ class AnamorphLexer:
             source_file=self.source_file
         )
         
-        # Only add non-whitespace tokens to the main list
-        if token_type not in (TokenType.WHITESPACE, TokenType.COMMENT):
+        # Only add non-whitespace tokens to the main list. Newline tokens are
+        # treated as whitespace for most consumers and therefore skipped.
+        if token_type not in (TokenType.WHITESPACE, TokenType.NEWLINE, TokenType.COMMENT):
             self.tokens.append(token)
             self.token_count += 1
         

@@ -3,6 +3,15 @@
 Полный тест UI инструментов разработки AnamorphX с реальными Tkinter компонентами
 """
 
+import os
+import pytest
+
+# Skip entire module if no graphical display is available. This prevents
+# Tkinter from raising errors in headless environments used for automated
+# testing.
+if not os.environ.get("DISPLAY"):
+    pytest.skip("UI tests require a display", allow_module_level=True)
+
 import unittest
 import tkinter as tk
 from tkinter import ttk, Text, Canvas

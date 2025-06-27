@@ -157,7 +157,7 @@ class AnamorphParser:
                 self.tokens = self._simple_tokenize(source_code)
             else:
                 lexer = AnamorphLexer()
-                self.tokens = lexer.tokenize(source_code, filename)
+                self.tokens = lexer.tokenize(source_code)
             
             self.current = 0
             self.errors = []
@@ -243,8 +243,9 @@ class AnamorphParser:
     
     def _is_at_end(self) -> bool:
         """Check if at end of tokens."""
-        return (self.current >= len(self.tokens) or 
-                self._current_token().type == TokenType.EOF)
+        if self.current >= len(self.tokens):
+            return True
+        return self.tokens[self.current].type == TokenType.EOF
     
     def _check(self, token_type: TokenType) -> bool:
         """Check if current token is of given type."""
